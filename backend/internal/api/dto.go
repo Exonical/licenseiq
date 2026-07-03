@@ -88,6 +88,7 @@ type ProductDeleteOutput struct{}
 type LicenseBody struct {
 	ProductID             uuid.UUID  `json:"productId" example:"550e8400-e29b-41d4-a716-446655440000"`
 	VendorID              uuid.UUID  `json:"vendorId" example:"550e8400-e29b-41d4-a716-446655440000"`
+	Department            string     `json:"department,omitempty" example:"Finance"`
 	LicenseKey            string     `json:"licenseKey,omitempty" example:"AAAA-BBBB-CCCC"`
 	SubscriptionID        string     `json:"subscriptionId,omitempty" example:"sub-123"`
 	ContractNumber        string     `json:"contractNumber,omitempty" example:"ctr-123"`
@@ -112,6 +113,7 @@ type LicenseResponse struct {
 	DeletedAt             *time.Time `json:"deletedAt,omitempty"`
 	ProductID             uuid.UUID  `json:"productId" example:"550e8400-e29b-41d4-a716-446655440000"`
 	VendorID              uuid.UUID  `json:"vendorId" example:"550e8400-e29b-41d4-a716-446655440000"`
+	Department            string     `json:"department,omitempty" example:"Finance"`
 	LicenseKey            string     `json:"licenseKey,omitempty" example:"AAAA-BBBB-CCCC"`
 	SubscriptionID        string     `json:"subscriptionId,omitempty" example:"sub-123"`
 	ContractNumber        string     `json:"contractNumber,omitempty" example:"ctr-123"`
@@ -220,7 +222,7 @@ func productBodyToDomain(b ProductBody) domain.Product {
 }
 
 func licenseToResponse(l domain.License) LicenseResponse {
-	return LicenseResponse{ID: l.ID, CreatedAt: l.CreatedAt, UpdatedAt: l.UpdatedAt, DeletedAt: l.DeletedAt, ProductID: l.ProductID, VendorID: l.VendorID, LicenseKey: l.LicenseKey, SubscriptionID: l.SubscriptionID, ContractNumber: l.ContractNumber, PurchaseOrder: l.PurchaseOrder, Invoice: l.Invoice, PurchaseDate: l.PurchaseDate, RenewalDate: l.RenewalDate, ExpirationDate: l.ExpirationDate, MaintenanceExpiration: l.MaintenanceExpiration, SeatCount: l.SeatCount, AssignedSeats: l.AssignedSeats, AvailableSeats: l.AvailableSeats(), Cost: l.Cost.StringFixedBank(2), Currency: l.Currency, Notes: l.Notes, Type: l.Type.String()}
+	return LicenseResponse{ID: l.ID, CreatedAt: l.CreatedAt, UpdatedAt: l.UpdatedAt, DeletedAt: l.DeletedAt, ProductID: l.ProductID, VendorID: l.VendorID, Department: l.Department, LicenseKey: l.LicenseKey, SubscriptionID: l.SubscriptionID, ContractNumber: l.ContractNumber, PurchaseOrder: l.PurchaseOrder, Invoice: l.Invoice, PurchaseDate: l.PurchaseDate, RenewalDate: l.RenewalDate, ExpirationDate: l.ExpirationDate, MaintenanceExpiration: l.MaintenanceExpiration, SeatCount: l.SeatCount, AssignedSeats: l.AssignedSeats, AvailableSeats: l.AvailableSeats(), Cost: l.Cost.StringFixedBank(2), Currency: l.Currency, Notes: l.Notes, Type: l.Type.String()}
 }
 
 func licenseBodyToDomain(b LicenseBody) (domain.License, error) {
@@ -232,7 +234,7 @@ func licenseBodyToDomain(b LicenseBody) (domain.License, error) {
 			return domain.License{}, fmt.Errorf("invalid cost: %w", err)
 		}
 	}
-	return domain.License{ProductID: b.ProductID, VendorID: b.VendorID, LicenseKey: b.LicenseKey, SubscriptionID: b.SubscriptionID, ContractNumber: b.ContractNumber, PurchaseOrder: b.PurchaseOrder, Invoice: b.Invoice, PurchaseDate: b.PurchaseDate, RenewalDate: b.RenewalDate, ExpirationDate: b.ExpirationDate, MaintenanceExpiration: b.MaintenanceExpiration, SeatCount: b.SeatCount, AssignedSeats: b.AssignedSeats, Cost: cost, Currency: b.Currency, Notes: b.Notes, Type: domain.LicenseType(b.Type)}, nil
+	return domain.License{ProductID: b.ProductID, VendorID: b.VendorID, Department: b.Department, LicenseKey: b.LicenseKey, SubscriptionID: b.SubscriptionID, ContractNumber: b.ContractNumber, PurchaseOrder: b.PurchaseOrder, Invoice: b.Invoice, PurchaseDate: b.PurchaseDate, RenewalDate: b.RenewalDate, ExpirationDate: b.ExpirationDate, MaintenanceExpiration: b.MaintenanceExpiration, SeatCount: b.SeatCount, AssignedSeats: b.AssignedSeats, Cost: cost, Currency: b.Currency, Notes: b.Notes, Type: domain.LicenseType(b.Type)}, nil
 }
 
 func assignmentToResponse(a domain.Assignment) AssignmentResponse {

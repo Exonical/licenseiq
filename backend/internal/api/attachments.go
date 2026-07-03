@@ -11,6 +11,10 @@ import (
 )
 
 func registerAttachmentRoutes(api huma.API, svc app.AttachmentService, logger *zap.Logger) {
+	if svc == nil {
+		return
+	}
+
 	huma.Post(api, "/attachments", func(ctx context.Context, input *AttachmentCreateInput) (*AttachmentGetOutput, error) {
 		created, err := svc.Create(ctx, attachmentBodyToDomain(input.Body))
 		if err != nil {

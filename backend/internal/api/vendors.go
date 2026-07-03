@@ -11,6 +11,10 @@ import (
 )
 
 func registerVendorRoutes(api huma.API, svc app.VendorService, logger *zap.Logger) {
+	if svc == nil {
+		return
+	}
+
 	huma.Post(api, "/vendors", func(ctx context.Context, input *VendorCreateInput) (*VendorGetOutput, error) {
 		created, err := svc.Create(ctx, vendorBodyToDomain(input.Body))
 		if err != nil {

@@ -62,6 +62,7 @@ type LicenseModel struct {
 	BaseModel
 	ProductID             uuid.UUID `gorm:"type:uuid;index"`
 	VendorID              uuid.UUID `gorm:"type:uuid;index"`
+	Department            string
 	LicenseKey            string
 	SubscriptionID        string
 	ContractNumber        string
