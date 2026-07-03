@@ -46,9 +46,9 @@ func newReportingAuthManager(t *testing.T) (*auth.Manager, string, string, strin
 	financeToken := "liq_finance.cccccccccccccccccccccccccccccccc"
 	userRepo := &authUserRepo{items: map[uuid.UUID]domain.User{adminUser.ID: adminUser, viewerUser.ID: viewerUser, financeUser.ID: financeUser}}
 	keyRepo := &authKeyRepo{itemsByKeyID: map[string]domain.APIKey{
-		"admin":   {Base: domain.Base{ID: uuid.New()}, OwnerUserID: adminUser.ID, KeyID: "admin", HashedKey: sha256Hex(adminToken), Name: "admin"},
-		"viewer":  {Base: domain.Base{ID: uuid.New()}, OwnerUserID: viewerUser.ID, KeyID: "viewer", HashedKey: sha256Hex(viewerToken), Name: "viewer"},
-		"finance": {Base: domain.Base{ID: uuid.New()}, OwnerUserID: financeUser.ID, KeyID: "finance", HashedKey: sha256Hex(financeToken), Name: "finance"},
+		"admin":   {Base: domain.Base{ID: uuid.New()}, OwnerUserID: adminUser.ID, KeyID: "admin", HashedKey: sha256Hex(adminToken), Name: "admin", Active: true},
+		"viewer":  {Base: domain.Base{ID: uuid.New()}, OwnerUserID: viewerUser.ID, KeyID: "viewer", HashedKey: sha256Hex(viewerToken), Name: "viewer", Active: true},
+		"finance": {Base: domain.Base{ID: uuid.New()}, OwnerUserID: financeUser.ID, KeyID: "finance", HashedKey: sha256Hex(financeToken), Name: "finance", Active: true},
 	}}
 	identity := app.NewIdentityService(userRepo, keyRepo, nil)
 	mgr, err := auth.NewManager(context.Background(), config.AuthConfig{}, identity, userRepo, keyRepo, zap.NewNop())

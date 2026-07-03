@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/Exonical/licenseiq/backend/internal/domain"
 	"github.com/google/uuid"
@@ -19,6 +20,7 @@ type AssignmentRepository struct{ db *gorm.DB }
 type AttachmentRepository struct{ db *gorm.DB }
 type UserRepository struct{ db *gorm.DB }
 type APIKeyRepository struct{ db *gorm.DB }
+type RenewalReminderLogRepository struct{ db *gorm.DB }
 type AuditRepository struct{ db *gorm.DB }
 type FeatureFlagRepository struct{ db *gorm.DB }
 
@@ -29,7 +31,10 @@ func NewAssignmentRepository(db *gorm.DB) *AssignmentRepository { return &Assign
 func NewAttachmentRepository(db *gorm.DB) *AttachmentRepository { return &AttachmentRepository{db: db} }
 func NewUserRepository(db *gorm.DB) *UserRepository             { return &UserRepository{db: db} }
 func NewAPIKeyRepository(db *gorm.DB) *APIKeyRepository         { return &APIKeyRepository{db: db} }
-func NewAuditRepository(db *gorm.DB) *AuditRepository           { return &AuditRepository{db: db} }
+func NewRenewalReminderLogRepository(db *gorm.DB) *RenewalReminderLogRepository {
+	return &RenewalReminderLogRepository{db: db}
+}
+func NewAuditRepository(db *gorm.DB) *AuditRepository { return &AuditRepository{db: db} }
 func NewFeatureFlagRepository(db *gorm.DB) *FeatureFlagRepository {
 	return &FeatureFlagRepository{db: db}
 }
@@ -492,6 +497,48 @@ func (r *APIKeyRepository) List(ctx context.Context, filter domain.ListFilter) (
 	out := make([]domain.APIKey, 0, len(models))
 	for _, m := range models {
 		out = append(out, apiKeyToDomain(m))
+	}
+	return out, nil
+}
+
+func (r *RenewalReminderLogRepository) Create(ctx context.Context, entity *domain.RenewalReminderLog) error {
+	if err := entity.Validate(); err != nil {
+		return err
+	}
+	model := renewalReminderLogToModel(*entity)
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return mapError(err)
+	}
+	*entity = renewalReminderLogToDomain(model)
+	return nil
+}
+
+func (r *RenewalReminderLogRepository) Get(ctx context.Context, id uuid.UUID) (*domain.RenewalReminderLog, error) {
+	var model RenewalReminderLogModel
+	if err := r.db.WithContext(ctx).First(&model, "id = ?", id).Error; err != nil {
+		return nil, mapError(err)
+	}
+	entity := renewalReminderLogToDomain(model)
+	return &entity, nil
+}
+
+func (r *RenewalReminderLogRepository) GetByLicenseThresholdAndRenewalDate(ctx context.Context, licenseID uuid.UUID, thresholdDays int, renewalDate time.Time) (*domain.RenewalReminderLog, error) {
+	var model RenewalReminderLogModel
+	if err := r.db.WithContext(ctx).First(&model, "license_id = ? AND threshold_days = ? AND renewal_date = ?", licenseID, thresholdDays, renewalDate.UTC()).Error; err != nil {
+		return nil, mapError(err)
+	}
+	entity := renewalReminderLogToDomain(model)
+	return &entity, nil
+}
+
+func (r *RenewalReminderLogRepository) List(ctx context.Context, filter domain.ListFilter) ([]domain.RenewalReminderLog, error) {
+	var models []RenewalReminderLogModel
+	if err := baseQuery(r.db.WithContext(ctx), filter).Order("created_at DESC").Find(&models).Error; err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]domain.RenewalReminderLog, 0, len(models))
+	for _, m := range models {
+		out = append(out, renewalReminderLogToDomain(m))
 	}
 	return out, nil
 }

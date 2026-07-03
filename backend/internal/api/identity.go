@@ -53,6 +53,7 @@ type APIKeyResponse struct {
 	KeyID       string     `json:"keyId" example:"abc123def456"`
 	OwnerUserID uuid.UUID  `json:"ownerUserId" example:"550e8400-e29b-41d4-a716-446655440000"`
 	Name        string     `json:"name" example:"cli"`
+	Active      bool       `json:"active" example:"true"`
 	Scopes      []string   `json:"scopes,omitempty" example:"[\"read\"]"`
 	ExpiresAt   *time.Time `json:"expiresAt,omitempty" example:"2027-01-01T00:00:00Z"`
 	LastUsedAt  *time.Time `json:"lastUsedAt,omitempty" example:"2026-01-01T00:00:00Z"`
@@ -235,9 +236,9 @@ func serviceAccountBodyToDomain(b ServiceAccountBody) domain.User {
 }
 
 func apiKeyToResponse(k domain.APIKey) APIKeyResponse {
-	return APIKeyResponse{ID: k.ID, CreatedAt: k.CreatedAt, UpdatedAt: k.UpdatedAt, DeletedAt: k.DeletedAt, KeyID: k.KeyID, OwnerUserID: k.OwnerUserID, Name: k.Name, Scopes: append([]string(nil), k.Scopes...), ExpiresAt: k.ExpiresAt, LastUsedAt: k.LastUsedAt}
+	return APIKeyResponse{ID: k.ID, CreatedAt: k.CreatedAt, UpdatedAt: k.UpdatedAt, DeletedAt: k.DeletedAt, KeyID: k.KeyID, OwnerUserID: k.OwnerUserID, Name: k.Name, Active: k.Active, Scopes: append([]string(nil), k.Scopes...), ExpiresAt: k.ExpiresAt, LastUsedAt: k.LastUsedAt}
 }
 
 func apiKeyBodyToDomain(ownerID uuid.UUID, b APIKeyBody) domain.APIKey {
-	return domain.APIKey{OwnerUserID: ownerID, Name: b.Name, Scopes: append([]string(nil), b.Scopes...), ExpiresAt: b.ExpiresAt}
+	return domain.APIKey{OwnerUserID: ownerID, Name: b.Name, Active: true, Scopes: append([]string(nil), b.Scopes...), ExpiresAt: b.ExpiresAt}
 }

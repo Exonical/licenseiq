@@ -179,6 +179,7 @@ func (s *identityService) GetAPIKeyByKeyID(ctx context.Context, keyID string) (*
 
 func (s *identityService) CreateAPIKey(ctx context.Context, input domain.APIKey) (*domain.APIKey, string, error) {
 	input.KeyID = generateKeyID()
+	input.Active = true
 	plain, err := generateAPIKey(input.KeyID)
 	if err != nil {
 		return nil, "", err
@@ -200,6 +201,7 @@ func (s *identityService) CreateAPIKeyWithToken(ctx context.Context, input domai
 		return nil, domain.ErrConflict
 	}
 	input.KeyID = keyID
+	input.Active = true
 	input.HashedKey = hashAPIKey(token)
 	created := input
 	if err := s.keys.Create(ctx, &created); err != nil {

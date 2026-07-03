@@ -23,6 +23,7 @@ import (
 	"github.com/Exonical/licenseiq/backend/internal/server"
 	"github.com/Exonical/licenseiq/backend/internal/telemetry"
 	"github.com/Exonical/licenseiq/backend/internal/version"
+	"github.com/Exonical/licenseiq/backend/internal/worker"
 	"github.com/danielgtaylor/huma/v2/adapters/humagin"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -147,6 +148,15 @@ func runServer(cfg config.Config, logger *zap.Logger) error {
 	if err != nil {
 		return err
 	}
+	scheduler := worker.NewScheduler(logger, cfg.Workers.Timeout)
+	if cfg.Workers.Enabled {
+		if cfg.Workers.Renewals.Enabled {
+			scheduler.Register(worker.NewRenewalReminderJob(cfg.Workers.Renewals.Interval, featureFlagManager, persistence.NewLicenseRepository(db), persistence.NewProductRepository(db), persistence.NewVendorRepository(db), persistence.NewRenewalReminderLogRepository(db), notificationDispatcher, logger))
+		}
+		if cfg.Workers.Maintenance.Enabled {
+			scheduler.Register(worker.NewMaintenanceJob(cfg.Workers.Maintenance.Interval, featureFlagManager, apiKeyRepo, logger))
+		}
+	}
 	services := apilayer.Services{
 		Vendors:       app.NewVendorService(persistence.NewVendorRepository(db), auditRepo),
 		Products:      app.NewProductService(persistence.NewProductRepository(db), auditRepo),
@@ -177,9 +187,21 @@ func runServer(cfg config.Config, logger *zap.Logger) error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	workerCtx, workerCancel := context.WithCancel(context.Background())
+	workerDone := make(chan struct{})
+	defer workerCancel()
+	if cfg.Workers.Enabled {
+		go func() {
+			defer close(workerDone)
+			if err := scheduler.Start(workerCtx); err != nil && !errors.Is(err, context.Canceled) {
+				logger.Warn("worker scheduler stopped", zap.Error(err))
+			}
+		}()
+	}
 
 	select {
 	case <-ctx.Done():
+		workerCancel()
 	case err := <-serverErr:
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Fatal("server exited", zap.Error(err))
@@ -192,6 +214,14 @@ func runServer(cfg config.Config, logger *zap.Logger) error {
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		return err
+	}
+	workerCancel()
+	if cfg.Workers.Enabled {
+		select {
+		case <-workerDone:
+		case <-time.After(cfg.HTTP.ShutdownTimeout):
+			logger.Warn("worker scheduler shutdown timed out")
+		}
 	}
 
 	if err := <-serverErr; err != nil && !errors.Is(err, http.ErrServerClosed) {

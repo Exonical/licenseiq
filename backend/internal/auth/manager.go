@@ -107,6 +107,9 @@ func (m *Manager) authenticateAPIKey(ctx context.Context, token string) (*Princi
 	if err != nil {
 		return nil, errUnauthorized
 	}
+	if !stored.Active {
+		return nil, errUnauthorized
+	}
 	if stored.ExpiresAt != nil && time.Now().UTC().After(*stored.ExpiresAt) {
 		return nil, errUnauthorized
 	}

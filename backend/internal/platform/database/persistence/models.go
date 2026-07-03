@@ -128,6 +128,7 @@ type APIKeyModel struct {
 	Owner       UserModel `gorm:"foreignKey:OwnerUserID;references:ID;constraint:OnDelete:CASCADE"`
 	Name        string
 	HashedKey   string   `gorm:"uniqueIndex"`
+	Active      bool     `gorm:"default:true"`
 	Scopes      []string `gorm:"type:jsonb;serializer:json"`
 	ExpiresAt   *time.Time
 	LastUsedAt  *time.Time
@@ -174,6 +175,16 @@ type FeatureFlagAuditModel struct {
 	NewValues      json.RawMessage `gorm:"type:jsonb"`
 }
 
+type RenewalReminderLogModel struct {
+	AuditBaseModel
+	LicenseID     uuid.UUID `gorm:"type:uuid;index;uniqueIndex:renewal_reminder_logs_unique"`
+	ThresholdDays int       `gorm:"uniqueIndex:renewal_reminder_logs_unique"`
+	RenewalDate   time.Time `gorm:"type:date;uniqueIndex:renewal_reminder_logs_unique"`
+	SentAt        time.Time
+}
+
+func (RenewalReminderLogModel) TableName() string { return "renewal_reminder_logs" }
+
 func (FeatureFlagAuditModel) TableName() string { return "feature_flag_audits" }
 
 func ensureUUID(id uuid.UUID) uuid.UUID {
@@ -193,6 +204,10 @@ func (m *UserModel) BeforeCreate(tx *gorm.DB) error          { m.ID = ensureUUID
 func (m *APIKeyModel) BeforeCreate(tx *gorm.DB) error        { m.ID = ensureUUID(m.ID); return nil }
 func (m *AuditLogModel) BeforeCreate(tx *gorm.DB) error      { m.ID = ensureUUID(m.ID); return nil }
 func (m *FeatureFlagModel) BeforeCreate(tx *gorm.DB) error   { m.ID = ensureUUID(m.ID); return nil }
+func (m *RenewalReminderLogModel) BeforeCreate(tx *gorm.DB) error {
+	m.ID = ensureUUID(m.ID)
+	return nil
+}
 func (m *FeatureFlagAuditModel) BeforeCreate(tx *gorm.DB) error {
 	m.ID = ensureUUID(m.ID)
 	return nil

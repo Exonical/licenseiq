@@ -120,6 +120,7 @@ func licenseToDomain(m LicenseModel) domain.License {
 		},
 		ProductID:             m.ProductID,
 		VendorID:              m.VendorID,
+		Department:            m.Department,
 		LicenseKey:            m.LicenseKey,
 		SubscriptionID:        m.SubscriptionID,
 		ContractNumber:        m.ContractNumber,
@@ -221,6 +222,7 @@ func apiKeyToModel(k domain.APIKey) APIKeyModel {
 		OwnerUserID: k.OwnerUserID,
 		Name:        k.Name,
 		HashedKey:   k.HashedKey,
+		Active:      k.Active,
 		Scopes:      append([]string(nil), k.Scopes...),
 		ExpiresAt:   k.ExpiresAt,
 		LastUsedAt:  k.LastUsedAt,
@@ -234,6 +236,7 @@ func apiKeyToDomain(m APIKeyModel) domain.APIKey {
 		OwnerUserID: m.OwnerUserID,
 		Name:        m.Name,
 		HashedKey:   m.HashedKey,
+		Active:      m.Active,
 		Scopes:      append([]string(nil), m.Scopes...),
 		ExpiresAt:   m.ExpiresAt,
 		LastUsedAt:  m.LastUsedAt,
@@ -314,5 +317,25 @@ func featureFlagAuditToModel(flagID uuid.UUID, actorID *uuid.UUID, action domain
 		Action:         string(action),
 		PreviousValues: append(json.RawMessage(nil), prev...),
 		NewValues:      append(json.RawMessage(nil), next...),
+	}
+}
+
+func renewalReminderLogToModel(r domain.RenewalReminderLog) RenewalReminderLogModel {
+	return RenewalReminderLogModel{
+		AuditBaseModel: newAuditBaseModel(r.Base),
+		LicenseID:      r.LicenseID,
+		ThresholdDays:  r.ThresholdDays,
+		RenewalDate:    r.RenewalDate.UTC(),
+		SentAt:         r.SentAt.UTC(),
+	}
+}
+
+func renewalReminderLogToDomain(m RenewalReminderLogModel) domain.RenewalReminderLog {
+	return domain.RenewalReminderLog{
+		Base:          domain.Base{ID: m.ID, CreatedAt: m.CreatedAt, UpdatedAt: m.UpdatedAt},
+		LicenseID:     m.LicenseID,
+		ThresholdDays: m.ThresholdDays,
+		RenewalDate:   m.RenewalDate,
+		SentAt:        m.SentAt,
 	}
 }
