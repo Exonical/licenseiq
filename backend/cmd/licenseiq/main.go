@@ -15,6 +15,7 @@ import (
 	"github.com/Exonical/licenseiq/backend/internal/auth"
 	"github.com/Exonical/licenseiq/backend/internal/config"
 	"github.com/Exonical/licenseiq/backend/internal/featureflags"
+	"github.com/Exonical/licenseiq/backend/internal/jira"
 	"github.com/Exonical/licenseiq/backend/internal/logging"
 	"github.com/Exonical/licenseiq/backend/internal/notify"
 	"github.com/Exonical/licenseiq/backend/internal/platform/cache"
@@ -148,22 +149,36 @@ func runServer(cfg config.Config, logger *zap.Logger) error {
 	if err != nil {
 		return err
 	}
+	jiraClient, err := jira.NewClient(cfg.Jira, logger)
+	if err != nil {
+		return err
+	}
+	licenseRepo := persistence.NewLicenseRepository(db)
+	productRepo := persistence.NewProductRepository(db)
+	vendorRepo := persistence.NewVendorRepository(db)
+	attachmentRepo := persistence.NewAttachmentRepository(db)
+	linkRepo := persistence.NewLicenseIssueLinkRepository(db)
+	jiraSvc := app.NewJiraService(jiraClient, cfg.Jira.ProjectKey, cfg.Jira.IssueType, licenseRepo, vendorRepo, productRepo, attachmentRepo, linkRepo, auditRepo)
 	scheduler := worker.NewScheduler(logger, cfg.Workers.Timeout)
 	if cfg.Workers.Enabled {
 		if cfg.Workers.Renewals.Enabled {
-			scheduler.Register(worker.NewRenewalReminderJob(cfg.Workers.Renewals.Interval, featureFlagManager, persistence.NewLicenseRepository(db), persistence.NewProductRepository(db), persistence.NewVendorRepository(db), persistence.NewRenewalReminderLogRepository(db), notificationDispatcher, logger))
+			scheduler.Register(worker.NewRenewalReminderJob(cfg.Workers.Renewals.Interval, featureFlagManager, licenseRepo, productRepo, vendorRepo, persistence.NewRenewalReminderLogRepository(db), notificationDispatcher, logger))
 		}
 		if cfg.Workers.Maintenance.Enabled {
 			scheduler.Register(worker.NewMaintenanceJob(cfg.Workers.Maintenance.Interval, featureFlagManager, apiKeyRepo, logger))
 		}
+		if cfg.Jira.Enabled && cfg.Workers.JiraSync.Enabled {
+			scheduler.Register(worker.NewJiraSyncJob(cfg.Workers.JiraSync.Interval, cfg.Workers.JiraSync.WindowDays, featureFlagManager, licenseRepo, linkRepo, jiraSvc, logger))
+		}
 	}
 	services := apilayer.Services{
-		Vendors:       app.NewVendorService(persistence.NewVendorRepository(db), auditRepo),
-		Products:      app.NewProductService(persistence.NewProductRepository(db), auditRepo),
-		Licenses:      app.NewLicenseService(persistence.NewLicenseRepository(db), auditRepo),
+		Vendors:       app.NewVendorService(vendorRepo, auditRepo),
+		Products:      app.NewProductService(productRepo, auditRepo),
+		Licenses:      app.NewLicenseService(licenseRepo, auditRepo),
 		Assignments:   app.NewAssignmentService(persistence.NewAssignmentRepository(db), auditRepo),
-		Attachments:   app.NewAttachmentService(persistence.NewAttachmentRepository(db), auditRepo),
+		Attachments:   app.NewAttachmentService(attachmentRepo, auditRepo),
 		FeatureFlags:  app.NewFeatureFlagService(featureFlagRepo),
+		Jira:          jiraSvc,
 		Identity:      identitySvc,
 		Notifications: notificationDispatcher,
 	}

@@ -57,6 +57,14 @@ type FeatureFlagService interface {
 	Delete(context.Context, uuid.UUID) error
 }
 
+type JiraService interface {
+	CreateRenewalTicket(context.Context, uuid.UUID) (*domain.LicenseIssueLink, error)
+	LinkIssue(context.Context, uuid.UUID, string, string) (*domain.LicenseIssueLink, error)
+	ListIssueLinks(context.Context, uuid.UUID) ([]domain.LicenseIssueLink, error)
+	UpdateIssueStatus(context.Context, uuid.UUID, string, string) (*domain.LicenseIssueLink, error)
+	AttachIssueFile(context.Context, uuid.UUID, string, uuid.UUID) error
+}
+
 type vendorService struct {
 	repo   domain.VendorRepository
 	audits domain.AuditRepository

@@ -21,6 +21,7 @@ type Services struct {
 	Assignments   app.AssignmentService
 	Attachments   app.AttachmentService
 	FeatureFlags  app.FeatureFlagService
+	Jira          app.JiraService
 	Identity      app.IdentityService
 	Notifications *notify.Dispatcher
 	Reports       app.ReportingService
@@ -67,6 +68,7 @@ func RegisterRoutes(api huma.API, services Services, logger *zap.Logger, authMan
 	registerLicenseRoutes(group, services.Licenses, logger)
 	registerAssignmentRoutes(group, services.Assignments, logger)
 	registerAttachmentRoutes(group, services.Attachments, logger)
+	registerJiraRoutes(group, services.Jira, logger)
 	registerFeatureFlagRoutes(group, services.FeatureFlags, flagManager, logger)
 	registerNotificationRoutes(group, services.Notifications, logger)
 	registerReportingRoutes(group, services.Reports, logger)
@@ -88,6 +90,8 @@ func mapServiceError(err error, logger *zap.Logger, ctx context.Context) error {
 		return huma.Error422UnprocessableEntity(err.Error())
 	case errors.Is(err, domain.ErrConflict):
 		return huma.Error409Conflict("conflict")
+	case errors.Is(err, app.ErrJiraDisabled):
+		return huma.Error503ServiceUnavailable("jira is not configured")
 	default:
 		if logger != nil {
 			rc := app.RequestContextFromContext(ctx)

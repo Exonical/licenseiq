@@ -21,6 +21,7 @@ type AttachmentRepository struct{ db *gorm.DB }
 type UserRepository struct{ db *gorm.DB }
 type APIKeyRepository struct{ db *gorm.DB }
 type RenewalReminderLogRepository struct{ db *gorm.DB }
+type LicenseIssueLinkRepository struct{ db *gorm.DB }
 type AuditRepository struct{ db *gorm.DB }
 type FeatureFlagRepository struct{ db *gorm.DB }
 
@@ -33,6 +34,9 @@ func NewUserRepository(db *gorm.DB) *UserRepository             { return &UserRe
 func NewAPIKeyRepository(db *gorm.DB) *APIKeyRepository         { return &APIKeyRepository{db: db} }
 func NewRenewalReminderLogRepository(db *gorm.DB) *RenewalReminderLogRepository {
 	return &RenewalReminderLogRepository{db: db}
+}
+func NewLicenseIssueLinkRepository(db *gorm.DB) *LicenseIssueLinkRepository {
+	return &LicenseIssueLinkRepository{db: db}
 }
 func NewAuditRepository(db *gorm.DB) *AuditRepository { return &AuditRepository{db: db} }
 func NewFeatureFlagRepository(db *gorm.DB) *FeatureFlagRepository {
@@ -541,6 +545,86 @@ func (r *RenewalReminderLogRepository) List(ctx context.Context, filter domain.L
 		out = append(out, renewalReminderLogToDomain(m))
 	}
 	return out, nil
+}
+
+// License issue links
+func (r *LicenseIssueLinkRepository) Create(ctx context.Context, entity *domain.LicenseIssueLink) error {
+	if err := entity.Validate(); err != nil {
+		return err
+	}
+	model := licenseIssueLinkToModel(*entity)
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return mapError(err)
+	}
+	*entity = licenseIssueLinkToDomain(model)
+	return nil
+}
+
+func (r *LicenseIssueLinkRepository) Get(ctx context.Context, id uuid.UUID) (*domain.LicenseIssueLink, error) {
+	var model LicenseIssueLinkModel
+	if err := r.db.WithContext(ctx).First(&model, "id = ?", id).Error; err != nil {
+		return nil, mapError(err)
+	}
+	entity := licenseIssueLinkToDomain(model)
+	return &entity, nil
+}
+
+func (r *LicenseIssueLinkRepository) Update(ctx context.Context, entity *domain.LicenseIssueLink) error {
+	if err := entity.Validate(); err != nil {
+		return err
+	}
+	model := licenseIssueLinkToModel(*entity)
+	if err := r.db.WithContext(ctx).Save(&model).Error; err != nil {
+		return mapError(err)
+	}
+	*entity = licenseIssueLinkToDomain(model)
+	return nil
+}
+
+func (r *LicenseIssueLinkRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	return mapError(r.db.WithContext(ctx).Delete(&LicenseIssueLinkModel{}, "id = ?", id).Error)
+}
+
+func (r *LicenseIssueLinkRepository) List(ctx context.Context, filter domain.ListFilter) ([]domain.LicenseIssueLink, error) {
+	var models []LicenseIssueLinkModel
+	if err := baseQuery(r.db.WithContext(ctx), filter).Order("created_at DESC").Find(&models).Error; err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]domain.LicenseIssueLink, 0, len(models))
+	for _, m := range models {
+		out = append(out, licenseIssueLinkToDomain(m))
+	}
+	return out, nil
+}
+
+func (r *LicenseIssueLinkRepository) ListByLicense(ctx context.Context, licenseID uuid.UUID) ([]domain.LicenseIssueLink, error) {
+	var models []LicenseIssueLinkModel
+	if err := r.db.WithContext(ctx).Where("license_id = ?", licenseID).Order("created_at DESC").Find(&models).Error; err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]domain.LicenseIssueLink, 0, len(models))
+	for _, m := range models {
+		out = append(out, licenseIssueLinkToDomain(m))
+	}
+	return out, nil
+}
+
+func (r *LicenseIssueLinkRepository) GetByLicenseAndIssueKey(ctx context.Context, licenseID uuid.UUID, issueKey string) (*domain.LicenseIssueLink, error) {
+	var model LicenseIssueLinkModel
+	if err := r.db.WithContext(ctx).First(&model, "license_id = ? AND issue_key = ?", licenseID, issueKey).Error; err != nil {
+		return nil, mapError(err)
+	}
+	entity := licenseIssueLinkToDomain(model)
+	return &entity, nil
+}
+
+func (r *LicenseIssueLinkRepository) GetByLicenseAndRenewalDate(ctx context.Context, licenseID uuid.UUID, renewalDate time.Time) (*domain.LicenseIssueLink, error) {
+	var model LicenseIssueLinkModel
+	if err := r.db.WithContext(ctx).First(&model, "license_id = ? AND renewal_date = ?", licenseID, renewalDate.UTC()).Error; err != nil {
+		return nil, mapError(err)
+	}
+	entity := licenseIssueLinkToDomain(model)
+	return &entity, nil
 }
 
 // Audit

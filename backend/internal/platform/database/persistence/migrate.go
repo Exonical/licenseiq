@@ -20,5 +20,6 @@ func Migrate(ctx context.Context, db *gorm.DB) error {
 		&FeatureFlagModel{},
 		&FeatureFlagAuditModel{},
 		&RenewalReminderLogModel{},
+		&LicenseIssueLinkModel{},
 	)
 }

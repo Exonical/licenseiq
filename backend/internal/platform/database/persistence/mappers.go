@@ -339,3 +339,25 @@ func renewalReminderLogToDomain(m RenewalReminderLogModel) domain.RenewalReminde
 		SentAt:        m.SentAt,
 	}
 }
+
+func licenseIssueLinkToModel(link domain.LicenseIssueLink) LicenseIssueLinkModel {
+	return LicenseIssueLinkModel{
+		AuditBaseModel: newAuditBaseModel(link.Base),
+		LicenseID:      link.LicenseID,
+		IssueKey:       link.IssueKey,
+		IssueURL:       link.IssueURL,
+		Status:         link.Status,
+		RenewalDate:    link.RenewalDate,
+	}
+}
+
+func licenseIssueLinkToDomain(m LicenseIssueLinkModel) domain.LicenseIssueLink {
+	return domain.LicenseIssueLink{
+		Base:        domain.Base{ID: m.ID, CreatedAt: m.CreatedAt, UpdatedAt: m.UpdatedAt},
+		LicenseID:   m.LicenseID,
+		IssueKey:    m.IssueKey,
+		IssueURL:    m.IssueURL,
+		Status:      m.Status,
+		RenewalDate: m.RenewalDate,
+	}
+}

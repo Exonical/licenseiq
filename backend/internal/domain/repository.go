@@ -31,6 +31,17 @@ type LicenseRepository interface {
 	List(context.Context, ListFilter) ([]License, error)
 }
 
+type LicenseIssueLinkRepository interface {
+	Create(context.Context, *LicenseIssueLink) error
+	Get(context.Context, uuid.UUID) (*LicenseIssueLink, error)
+	Update(context.Context, *LicenseIssueLink) error
+	Delete(context.Context, uuid.UUID) error
+	List(context.Context, ListFilter) ([]LicenseIssueLink, error)
+	ListByLicense(context.Context, uuid.UUID) ([]LicenseIssueLink, error)
+	GetByLicenseAndIssueKey(context.Context, uuid.UUID, string) (*LicenseIssueLink, error)
+	GetByLicenseAndRenewalDate(context.Context, uuid.UUID, time.Time) (*LicenseIssueLink, error)
+}
+
 type AssignmentRepository interface {
 	Create(context.Context, *Assignment) error
 	Get(context.Context, uuid.UUID) (*Assignment, error)
