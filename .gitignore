@@ -1,0 +1,9 @@
+bin/
+dist/
+coverage/
+node_modules/
+.env
+.env.*
+*.cover
+*.out
+*.test

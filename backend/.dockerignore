@@ -1,0 +1,9 @@
+.git
+.github
+bin
+coverage.out
+*.test
+*.out
+deploy
+frontend
+tmp
