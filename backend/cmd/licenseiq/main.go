@@ -16,6 +16,7 @@ import (
 	"github.com/Exonical/licenseiq/backend/internal/config"
 	"github.com/Exonical/licenseiq/backend/internal/featureflags"
 	"github.com/Exonical/licenseiq/backend/internal/logging"
+	"github.com/Exonical/licenseiq/backend/internal/notify"
 	"github.com/Exonical/licenseiq/backend/internal/platform/cache"
 	"github.com/Exonical/licenseiq/backend/internal/platform/database"
 	"github.com/Exonical/licenseiq/backend/internal/platform/database/persistence"
@@ -141,14 +142,20 @@ func runServer(cfg config.Config, logger *zap.Logger) error {
 		return err
 	}
 	defer featureFlagManager.Close()
+
+	notificationDispatcher, err := notify.NewDispatcher(cfg.Notifications)
+	if err != nil {
+		return err
+	}
 	services := apilayer.Services{
-		Vendors:      app.NewVendorService(persistence.NewVendorRepository(db), auditRepo),
-		Products:     app.NewProductService(persistence.NewProductRepository(db), auditRepo),
-		Licenses:     app.NewLicenseService(persistence.NewLicenseRepository(db), auditRepo),
-		Assignments:  app.NewAssignmentService(persistence.NewAssignmentRepository(db), auditRepo),
-		Attachments:  app.NewAttachmentService(persistence.NewAttachmentRepository(db), auditRepo),
-		FeatureFlags: app.NewFeatureFlagService(featureFlagRepo),
-		Identity:     identitySvc,
+		Vendors:       app.NewVendorService(persistence.NewVendorRepository(db), auditRepo),
+		Products:      app.NewProductService(persistence.NewProductRepository(db), auditRepo),
+		Licenses:      app.NewLicenseService(persistence.NewLicenseRepository(db), auditRepo),
+		Assignments:   app.NewAssignmentService(persistence.NewAssignmentRepository(db), auditRepo),
+		Attachments:   app.NewAttachmentService(persistence.NewAttachmentRepository(db), auditRepo),
+		FeatureFlags:  app.NewFeatureFlagService(featureFlagRepo),
+		Identity:      identitySvc,
+		Notifications: notificationDispatcher,
 	}
 	apilayer.RegisterRoutes(humaAPI, services, logger, authManager, featureFlagManager)
 	apilayer.MountOpenAPI(engine, humaAPI)

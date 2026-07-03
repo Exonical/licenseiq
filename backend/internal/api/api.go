@@ -9,18 +9,20 @@ import (
 	"github.com/Exonical/licenseiq/backend/internal/auth"
 	"github.com/Exonical/licenseiq/backend/internal/domain"
 	"github.com/Exonical/licenseiq/backend/internal/featureflags"
+	"github.com/Exonical/licenseiq/backend/internal/notify"
 	"github.com/danielgtaylor/huma/v2"
 	"go.uber.org/zap"
 )
 
 type Services struct {
-	Vendors      app.VendorService
-	Products     app.ProductService
-	Licenses     app.LicenseService
-	Assignments  app.AssignmentService
-	Attachments  app.AttachmentService
-	FeatureFlags app.FeatureFlagService
-	Identity     app.IdentityService
+	Vendors       app.VendorService
+	Products      app.ProductService
+	Licenses      app.LicenseService
+	Assignments   app.AssignmentService
+	Attachments   app.AttachmentService
+	FeatureFlags  app.FeatureFlagService
+	Identity      app.IdentityService
+	Notifications *notify.Dispatcher
 }
 
 func NewHumaConfig(title, version string) huma.Config {
@@ -65,6 +67,7 @@ func RegisterRoutes(api huma.API, services Services, logger *zap.Logger, authMan
 	registerAssignmentRoutes(group, services.Assignments, logger)
 	registerAttachmentRoutes(group, services.Attachments, logger)
 	registerFeatureFlagRoutes(group, services.FeatureFlags, flagManager, logger)
+	registerNotificationRoutes(group, services.Notifications, logger)
 	registerIdentityRoutes(group, services.Identity, logger)
 }
 
