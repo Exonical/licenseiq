@@ -14,6 +14,7 @@ import (
 	"github.com/Exonical/licenseiq/backend/internal/app"
 	"github.com/Exonical/licenseiq/backend/internal/auth"
 	"github.com/Exonical/licenseiq/backend/internal/config"
+	"github.com/Exonical/licenseiq/backend/internal/featureflags"
 	"github.com/Exonical/licenseiq/backend/internal/logging"
 	"github.com/Exonical/licenseiq/backend/internal/platform/cache"
 	"github.com/Exonical/licenseiq/backend/internal/platform/database"
@@ -134,15 +135,23 @@ func runServer(cfg config.Config, logger *zap.Logger) error {
 	} else if plain != "" {
 		logger.Warn("bootstrap administrator api key", zap.String("plaintext", plain))
 	}
-	services := apilayer.Services{
-		Vendors:     app.NewVendorService(persistence.NewVendorRepository(db), auditRepo),
-		Products:    app.NewProductService(persistence.NewProductRepository(db), auditRepo),
-		Licenses:    app.NewLicenseService(persistence.NewLicenseRepository(db), auditRepo),
-		Assignments: app.NewAssignmentService(persistence.NewAssignmentRepository(db), auditRepo),
-		Attachments: app.NewAttachmentService(persistence.NewAttachmentRepository(db), auditRepo),
-		Identity:    identitySvc,
+	featureFlagRepo := persistence.NewFeatureFlagRepository(db)
+	featureFlagManager, err := featureflags.NewManager(context.Background(), cfg.FeatureFlags, featureFlagRepo, logger)
+	if err != nil {
+		return err
 	}
-	apilayer.RegisterRoutes(humaAPI, services, logger, authManager)
+	defer featureFlagManager.Close()
+	services := apilayer.Services{
+		Vendors:      app.NewVendorService(persistence.NewVendorRepository(db), auditRepo),
+		Products:     app.NewProductService(persistence.NewProductRepository(db), auditRepo),
+		Licenses:     app.NewLicenseService(persistence.NewLicenseRepository(db), auditRepo),
+		Assignments:  app.NewAssignmentService(persistence.NewAssignmentRepository(db), auditRepo),
+		Attachments:  app.NewAttachmentService(persistence.NewAttachmentRepository(db), auditRepo),
+		FeatureFlags: app.NewFeatureFlagService(featureFlagRepo),
+		Identity:     identitySvc,
+	}
+	apilayer.RegisterRoutes(humaAPI, services, logger, authManager, featureFlagManager)
+	apilayer.MountOpenAPI(engine, humaAPI)
 	apilayer.MountDocs(engine)
 
 	httpServer := &http.Server{

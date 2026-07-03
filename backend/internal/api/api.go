@@ -8,22 +8,24 @@ import (
 	"github.com/Exonical/licenseiq/backend/internal/app"
 	"github.com/Exonical/licenseiq/backend/internal/auth"
 	"github.com/Exonical/licenseiq/backend/internal/domain"
+	"github.com/Exonical/licenseiq/backend/internal/featureflags"
 	"github.com/danielgtaylor/huma/v2"
 	"go.uber.org/zap"
 )
 
 type Services struct {
-	Vendors     app.VendorService
-	Products    app.ProductService
-	Licenses    app.LicenseService
-	Assignments app.AssignmentService
-	Attachments app.AttachmentService
-	Identity    app.IdentityService
+	Vendors      app.VendorService
+	Products     app.ProductService
+	Licenses     app.LicenseService
+	Assignments  app.AssignmentService
+	Attachments  app.AttachmentService
+	FeatureFlags app.FeatureFlagService
+	Identity     app.IdentityService
 }
 
 func NewHumaConfig(title, version string) huma.Config {
 	cfg := huma.DefaultConfig(title, version)
-	cfg.OpenAPIPath = "/openapi"
+	cfg.OpenAPIPath = "/openapi.json"
 	cfg.DocsPath = ""
 	cfg.SchemasPath = "/schemas"
 	if cfg.Info == nil {
@@ -51,7 +53,7 @@ func NewHumaConfig(title, version string) huma.Config {
 	return cfg
 }
 
-func RegisterRoutes(api huma.API, services Services, logger *zap.Logger, authManager *auth.Manager) {
+func RegisterRoutes(api huma.API, services Services, logger *zap.Logger, authManager *auth.Manager, flagManager *featureflags.Manager) {
 	group := huma.NewGroup(api, "/api/v1")
 	group.UseMiddleware(requestContextMiddleware)
 	if authManager != nil {
@@ -62,6 +64,7 @@ func RegisterRoutes(api huma.API, services Services, logger *zap.Logger, authMan
 	registerLicenseRoutes(group, services.Licenses, logger)
 	registerAssignmentRoutes(group, services.Assignments, logger)
 	registerAttachmentRoutes(group, services.Attachments, logger)
+	registerFeatureFlagRoutes(group, services.FeatureFlags, flagManager, logger)
 	registerIdentityRoutes(group, services.Identity, logger)
 }
 

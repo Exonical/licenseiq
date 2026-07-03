@@ -79,7 +79,7 @@ func TestVendorAPIHappyPath(t *testing.T) {
 	t.Parallel()
 	vendorSvc := &vendorAPIFake{}
 	_, api := humatest.New(t, NewHumaConfig("LicenseIQ API", "test"))
-	RegisterRoutes(api, Services{Vendors: vendorSvc}, zap.NewNop(), nil)
+	RegisterRoutes(api, Services{Vendors: vendorSvc}, zap.NewNop(), nil, nil)
 
 	resp := api.Post("/api/v1/vendors", map[string]any{
 		"name":     "Acme",
@@ -127,7 +127,7 @@ func TestAPIErrorMappings(t *testing.T) {
 	RegisterRoutes(api, Services{
 		Vendors:     &vendorAPIFake{items: map[uuid.UUID]domain.Vendor{}},
 		Assignments: &assignmentAPIFake{createErr: domain.ErrConflict},
-	}, zap.NewNop(), nil)
+	}, zap.NewNop(), nil, nil)
 
 	resp := api.Get("/api/v1/vendors/550e8400-e29b-41d4-a716-446655440000")
 	if resp.Code != 404 {

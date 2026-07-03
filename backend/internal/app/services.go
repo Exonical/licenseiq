@@ -49,6 +49,14 @@ type AttachmentService interface {
 	Delete(context.Context, uuid.UUID) error
 }
 
+type FeatureFlagService interface {
+	List(context.Context, domain.ListFilter) ([]domain.FeatureFlag, error)
+	Get(context.Context, uuid.UUID) (*domain.FeatureFlag, error)
+	Create(context.Context, domain.FeatureFlag) (*domain.FeatureFlag, error)
+	Update(context.Context, uuid.UUID, domain.FeatureFlag) (*domain.FeatureFlag, error)
+	Delete(context.Context, uuid.UUID) error
+}
+
 type vendorService struct {
 	repo   domain.VendorRepository
 	audits domain.AuditRepository
@@ -74,6 +82,10 @@ type attachmentService struct {
 	audits domain.AuditRepository
 }
 
+type featureFlagService struct {
+	repo domain.FeatureFlagRepository
+}
+
 func NewVendorService(repo domain.VendorRepository, audits domain.AuditRepository) VendorService {
 	return &vendorService{repo: repo, audits: audits}
 }
@@ -92,6 +104,10 @@ func NewAssignmentService(repo domain.AssignmentRepository, audits domain.AuditR
 
 func NewAttachmentService(repo domain.AttachmentRepository, audits domain.AuditRepository) AttachmentService {
 	return &attachmentService{repo: repo, audits: audits}
+}
+
+func NewFeatureFlagService(repo domain.FeatureFlagRepository) FeatureFlagService {
+	return &featureFlagService{repo: repo}
 }
 
 func (s *vendorService) List(ctx context.Context, filter domain.ListFilter) ([]domain.Vendor, error) {
@@ -301,6 +317,35 @@ func (s *attachmentService) Delete(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 	return writeAudit(ctx, s.audits, domain.AuditActionDelete, "attachment", id, previous, nil)
+}
+
+func (s *featureFlagService) List(ctx context.Context, filter domain.ListFilter) ([]domain.FeatureFlag, error) {
+	return s.repo.List(ctx, filter)
+}
+
+func (s *featureFlagService) Get(ctx context.Context, id uuid.UUID) (*domain.FeatureFlag, error) {
+	return s.repo.Get(ctx, id)
+}
+
+func (s *featureFlagService) Create(ctx context.Context, input domain.FeatureFlag) (*domain.FeatureFlag, error) {
+	created := input
+	if err := s.repo.Create(ctx, &created); err != nil {
+		return nil, err
+	}
+	return &created, nil
+}
+
+func (s *featureFlagService) Update(ctx context.Context, id uuid.UUID, input domain.FeatureFlag) (*domain.FeatureFlag, error) {
+	input.ID = id
+	updated := input
+	if err := s.repo.Update(ctx, &updated); err != nil {
+		return nil, err
+	}
+	return &updated, nil
+}
+
+func (s *featureFlagService) Delete(ctx context.Context, id uuid.UUID) error {
+	return s.repo.Delete(ctx, id)
 }
 
 func writeAudit(ctx context.Context, repo domain.AuditRepository, action domain.AuditAction, entityType string, entityID uuid.UUID, previous any, current any) error {

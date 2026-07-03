@@ -15,12 +15,13 @@ import (
 )
 
 type Config struct {
-	HTTP     HTTPConfig
-	Postgres PostgresConfig
-	Valkey   ValkeyConfig
-	Log      LogConfig
-	OTel     OTelConfig
-	Auth     AuthConfig
+	HTTP         HTTPConfig
+	Postgres     PostgresConfig
+	Valkey       ValkeyConfig
+	Log          LogConfig
+	OTel         OTelConfig
+	Auth         AuthConfig
+	FeatureFlags FeatureFlagsConfig
 }
 
 type HTTPConfig struct {
@@ -77,6 +78,10 @@ type BootstrapConfig struct {
 	AdminAPIKeyName  string
 }
 
+type FeatureFlagsConfig struct {
+	Overrides map[string]bool
+}
+
 func Load() Config {
 	cfg := Config{
 		HTTP: HTTPConfig{
@@ -123,6 +128,7 @@ func Load() Config {
 				AdminAPIKeyName:  getEnv("BOOTSTRAP_ADMIN_API_KEY_NAME", "bootstrap-admin"),
 			},
 		},
+		FeatureFlags: FeatureFlagsConfig{Overrides: parseFeatureFlagOverrides(os.Environ())},
 	}
 	if cfg.Auth.Bootstrap.AdminDisplayName == "" && cfg.Auth.Bootstrap.AdminEmail != "" {
 		cfg.Auth.Bootstrap.AdminDisplayName = cfg.Auth.Bootstrap.AdminEmail
@@ -317,6 +323,36 @@ func parseRole(value string) domain.Role {
 		return domain.RoleViewer
 	}
 	return role
+}
+
+func parseFeatureFlagOverrides(values []string) map[string]bool {
+	overrides := map[string]bool{}
+	for _, entry := range values {
+		key, value, ok := strings.Cut(entry, "=")
+		if !ok || !strings.HasPrefix(key, "FEATUREFLAG_") {
+			continue
+		}
+		normalizedKey := normalizeFeatureFlagKey(strings.TrimPrefix(key, "FEATUREFLAG_"))
+		if normalizedKey == "" {
+			continue
+		}
+		parsed, err := strconv.ParseBool(strings.TrimSpace(value))
+		if err != nil {
+			continue
+		}
+		overrides[normalizedKey] = parsed
+	}
+	return overrides
+}
+
+func normalizeFeatureFlagKey(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	value = strings.ToLower(value)
+	value = strings.ReplaceAll(value, "_", "-")
+	return value
 }
 
 func parseEmail(value string) (string, error) {
