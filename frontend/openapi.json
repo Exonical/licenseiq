@@ -1,0 +1,226 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "LicenseIQ API",
+    "version": "dev"
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "paths": {
+    "/api/v1/reports/renewals": {
+      "get": {
+        "operationId": "getUpcomingRenewals",
+        "summary": "Upcoming renewals",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportTable"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/expired": {
+      "get": {
+        "operationId": "getExpiredLicenses",
+        "summary": "Expired licenses",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportTable"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/vendor-spend": {
+      "get": {
+        "operationId": "getVendorSpend",
+        "summary": "Vendor spend",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportTable"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reports/utilization": {
+      "get": {
+        "operationId": "getLicenseUtilization",
+        "summary": "License utilization",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportTable"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/licenses": {
+      "get": {
+        "operationId": "listLicenses",
+        "summary": "List licenses",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 100
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_LicenseResponse_"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ReportTable": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "columns",
+          "rows"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "totals": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SummaryRow"
+            }
+          }
+        }
+      },
+      "SummaryRow": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "label",
+          "values"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "LicenseResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "licenseKey": {
+            "type": "string"
+          },
+          "department": {
+            "type": "string"
+          }
+        }
+      },
+      "Page_LicenseResponse_": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "data",
+          "limit",
+          "offset",
+          "total"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LicenseResponse"
+            }
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}
