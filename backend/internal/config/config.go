@@ -88,7 +88,6 @@ type NotificationsConfig struct {
 	SMTP        SMTPNotificationsConfig
 	Slack       SlackNotificationsConfig
 	Teams       TeamsNotificationsConfig
-	Discord     DiscordNotificationsConfig
 	Webhooks    WebhookNotificationsConfig
 }
 
@@ -108,10 +107,6 @@ type SlackNotificationsConfig struct {
 }
 
 type TeamsNotificationsConfig struct {
-	WebhookURL string
-}
-
-type DiscordNotificationsConfig struct {
 	WebhookURL string
 }
 
@@ -180,7 +175,6 @@ func Load() Config {
 			},
 			Slack:    SlackNotificationsConfig{WebhookURL: strings.TrimSpace(os.Getenv("NOTIFICATIONS_SLACK_WEBHOOK_URL"))},
 			Teams:    TeamsNotificationsConfig{WebhookURL: strings.TrimSpace(os.Getenv("NOTIFICATIONS_TEAMS_WEBHOOK_URL"))},
-			Discord:  DiscordNotificationsConfig{WebhookURL: strings.TrimSpace(os.Getenv("NOTIFICATIONS_DISCORD_WEBHOOK_URL"))},
 			Webhooks: WebhookNotificationsConfig{URLs: splitCSV(os.Getenv("NOTIFICATIONS_WEBHOOK_URLS"))},
 		},
 	}

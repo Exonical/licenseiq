@@ -30,9 +30,6 @@ func NewDispatcher(cfg config.NotificationsConfig) (*Dispatcher, error) {
 	if n := NewTeamsNotifier(cfg.Teams.WebhookURL, client); n != nil {
 		channels = append(channels, n)
 	}
-	if n := NewDiscordNotifier(cfg.Discord.WebhookURL, client); n != nil {
-		channels = append(channels, n)
-	}
 	for i, u := range cfg.Webhooks.URLs {
 		if n := NewWebhookNotifier(strings.TrimSpace(u), client, fmt.Sprintf("webhook[%d]", i+1)); n != nil {
 			channels = append(channels, n)

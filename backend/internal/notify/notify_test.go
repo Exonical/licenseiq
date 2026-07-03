@@ -67,7 +67,6 @@ func TestHTTPNotifiers(t *testing.T) {
 	}{
 		{name: "slack", new: NewSlackNotifier},
 		{name: "teams", new: NewTeamsNotifier},
-		{name: "discord", new: NewDiscordNotifier},
 		{name: "webhook", new: func(url string, client *http.Client) Notifier { return NewWebhookNotifier(url, client, "webhook") }},
 	}
 	for _, tc := range tests {
@@ -112,11 +111,6 @@ func TestHTTPNotifiers(t *testing.T) {
 			if tc.name == "teams" {
 				if gotBody["@type"] != "MessageCard" {
 					t.Fatalf("unexpected teams payload: %+v", gotBody)
-				}
-			}
-			if tc.name == "discord" {
-				if gotBody["content"] == "" {
-					t.Fatalf("expected discord content: %+v", gotBody)
 				}
 			}
 		})

@@ -59,35 +59,6 @@ func (n *teamsNotifier) Send(ctx context.Context, msg Message) error {
 	return postJSON(ctx, n.client, n.webhookURL, body, "teams")
 }
 
-type discordNotifier struct {
-	webhookURL string
-	client     *http.Client
-}
-
-func NewDiscordNotifier(webhookURL string, client *http.Client) Notifier {
-	webhookURL = strings.TrimSpace(webhookURL)
-	if webhookURL == "" || client == nil {
-		return nil
-	}
-	return &discordNotifier{webhookURL: webhookURL, client: client}
-}
-
-func (n *discordNotifier) Name() string { return "discord" }
-
-func (n *discordNotifier) Send(ctx context.Context, msg Message) error {
-	body := map[string]any{
-		"content": msg.Subject + "\n\n" + msg.Text,
-	}
-	if len(msg.Fields) > 0 {
-		body["embeds"] = []map[string]any{{
-			"title":       msg.Subject,
-			"description": msg.Text,
-			"fields":      fieldFacts(msg.Fields),
-		}}
-	}
-	return postJSON(ctx, n.client, n.webhookURL, body, "discord")
-}
-
 type webhookNotifier struct {
 	name       string
 	webhookURL string
