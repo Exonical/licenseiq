@@ -24,6 +24,7 @@ type Config struct {
 	FeatureFlags  FeatureFlagsConfig
 	Notifications NotificationsConfig
 	Jira          JiraConfig
+	MCP           MCPConfig
 	Workers       WorkersConfig
 }
 
@@ -103,6 +104,12 @@ type JiraConfig struct {
 	ProjectKey    string
 	IssueType     string
 	HTTPTimeout   time.Duration
+}
+
+type MCPConfig struct {
+	Enabled                   bool
+	ServiceAccountEmail       string
+	ServiceAccountDisplayName string
 }
 
 type WorkersConfig struct {
@@ -226,6 +233,11 @@ func Load() Config {
 			IssueType:     strings.TrimSpace(os.Getenv("JIRA_ISSUE_TYPE")),
 			HTTPTimeout:   getEnvDuration("JIRA_HTTP_TIMEOUT", 10*time.Second),
 		},
+		MCP: MCPConfig{
+			Enabled:                   getEnvBool("MCP_ENABLED", false),
+			ServiceAccountEmail:       strings.TrimSpace(os.Getenv("MCP_SERVICE_ACCOUNT_EMAIL")),
+			ServiceAccountDisplayName: strings.TrimSpace(getEnv("MCP_SERVICE_ACCOUNT_DISPLAY_NAME", "LicenseIQ MCP")),
+		},
 		Workers: WorkersConfig{
 			Enabled: getEnvBool("WORKERS_ENABLED", true),
 			Timeout: getEnvDuration("WORKERS_TIMEOUT", 10*time.Minute),
@@ -261,6 +273,9 @@ func Load() Config {
 	}
 	if cfg.Jira.HTTPTimeout <= 0 {
 		cfg.Jira.HTTPTimeout = 10 * time.Second
+	}
+	if cfg.MCP.ServiceAccountDisplayName == "" {
+		cfg.MCP.ServiceAccountDisplayName = "LicenseIQ MCP"
 	}
 	if cfg.Workers.Timeout <= 0 {
 		cfg.Workers.Timeout = 10 * time.Minute
@@ -349,6 +364,16 @@ func (c Config) Validate() error {
 		case "datacenter":
 			if c.Jira.PersonalToken == "" {
 				return fmt.Errorf("jira datacenter personal access token is required")
+			}
+		}
+	}
+	if c.MCP.Enabled {
+		if c.MCP.ServiceAccountEmail == "" && c.Auth.Bootstrap.AdminEmail == "" {
+			return fmt.Errorf("mcp service account email is required")
+		}
+		if c.MCP.ServiceAccountEmail != "" {
+			if _, err := parseEmail(c.MCP.ServiceAccountEmail); err != nil {
+				return fmt.Errorf("mcp service account email: %w", err)
 			}
 		}
 	}

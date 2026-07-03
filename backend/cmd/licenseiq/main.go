@@ -42,11 +42,19 @@ func main() {
 	}
 	defer func() { _ = logger.Sync() }()
 
-	if len(os.Args) > 1 && os.Args[1] == "migrate" {
-		if err := runMigrations(cfg, logger); err != nil {
-			logger.Fatal("run migrations", zap.Error(err))
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "migrate":
+			if err := runMigrations(cfg, logger); err != nil {
+				logger.Fatal("run migrations", zap.Error(err))
+			}
+			return
+		case "mcp":
+			if err := runMCP(cfg, logger); err != nil {
+				logger.Fatal("run mcp", zap.Error(err))
+			}
+			return
 		}
-		return
 	}
 
 	if err := runServer(cfg, logger); err != nil {
@@ -181,6 +189,7 @@ func runServer(cfg config.Config, logger *zap.Logger) error {
 		Jira:          jiraSvc,
 		Identity:      identitySvc,
 		Notifications: notificationDispatcher,
+		Reports:       app.NewReportingService(vendorRepo, productRepo, licenseRepo),
 	}
 	apilayer.RegisterRoutes(humaAPI, services, logger, authManager, featureFlagManager)
 	apilayer.MountOpenAPI(engine, humaAPI)
