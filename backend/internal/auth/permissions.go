@@ -29,6 +29,7 @@ var permissionMatrix = map[Permission]domain.Role{
 	{Resource: "audit_logs", Action: "read"}:        domain.RoleAuditor,
 	{Resource: "reports", Action: "read"}:           domain.RoleViewer,
 	{Resource: "reports", Action: "financial"}:      domain.RoleFinance,
+	{Resource: "jira", Action: "manage"}:            domain.RoleLicenseManager,
 	{Resource: "notifications", Action: "admin"}:    domain.RoleAdministrator,
 }
 

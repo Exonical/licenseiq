@@ -185,6 +185,17 @@ type RenewalReminderLogModel struct {
 
 func (RenewalReminderLogModel) TableName() string { return "renewal_reminder_logs" }
 
+type LicenseIssueLinkModel struct {
+	AuditBaseModel
+	LicenseID   uuid.UUID `gorm:"type:uuid;index;uniqueIndex:license_issue_links_cycle_unique;uniqueIndex:license_issue_links_issue_unique"`
+	IssueKey    string    `gorm:"uniqueIndex:license_issue_links_issue_unique"`
+	IssueURL    string
+	Status      string
+	RenewalDate *time.Time `gorm:"type:date;index;uniqueIndex:license_issue_links_cycle_unique"`
+}
+
+func (LicenseIssueLinkModel) TableName() string { return "license_issue_links" }
+
 func (FeatureFlagAuditModel) TableName() string { return "feature_flag_audits" }
 
 func ensureUUID(id uuid.UUID) uuid.UUID {
@@ -205,6 +216,10 @@ func (m *APIKeyModel) BeforeCreate(tx *gorm.DB) error        { m.ID = ensureUUID
 func (m *AuditLogModel) BeforeCreate(tx *gorm.DB) error      { m.ID = ensureUUID(m.ID); return nil }
 func (m *FeatureFlagModel) BeforeCreate(tx *gorm.DB) error   { m.ID = ensureUUID(m.ID); return nil }
 func (m *RenewalReminderLogModel) BeforeCreate(tx *gorm.DB) error {
+	m.ID = ensureUUID(m.ID)
+	return nil
+}
+func (m *LicenseIssueLinkModel) BeforeCreate(tx *gorm.DB) error {
 	m.ID = ensureUUID(m.ID)
 	return nil
 }

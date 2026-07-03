@@ -23,6 +23,7 @@ type Config struct {
 	Auth          AuthConfig
 	FeatureFlags  FeatureFlagsConfig
 	Notifications NotificationsConfig
+	Jira          JiraConfig
 	Workers       WorkersConfig
 }
 
@@ -92,11 +93,24 @@ type NotificationsConfig struct {
 	Webhooks    WebhookNotificationsConfig
 }
 
+type JiraConfig struct {
+	Enabled       bool
+	BaseURL       string
+	Deployment    string
+	Email         string
+	APIToken      string
+	PersonalToken string
+	ProjectKey    string
+	IssueType     string
+	HTTPTimeout   time.Duration
+}
+
 type WorkersConfig struct {
 	Enabled     bool
 	Timeout     time.Duration
 	Renewals    RenewalReminderWorkerConfig
 	Maintenance MaintenanceWorkerConfig
+	JiraSync    JiraSyncWorkerConfig
 }
 
 type RenewalReminderWorkerConfig struct {
@@ -107,6 +121,12 @@ type RenewalReminderWorkerConfig struct {
 type MaintenanceWorkerConfig struct {
 	Enabled  bool
 	Interval time.Duration
+}
+
+type JiraSyncWorkerConfig struct {
+	Enabled    bool
+	Interval   time.Duration
+	WindowDays int
 }
 
 type SMTPNotificationsConfig struct {
@@ -195,6 +215,17 @@ func Load() Config {
 			Teams:    TeamsNotificationsConfig{WebhookURL: strings.TrimSpace(os.Getenv("NOTIFICATIONS_TEAMS_WEBHOOK_URL"))},
 			Webhooks: WebhookNotificationsConfig{URLs: splitCSV(os.Getenv("NOTIFICATIONS_WEBHOOK_URLS"))},
 		},
+		Jira: JiraConfig{
+			Enabled:       getEnvBool("JIRA_ENABLED", false),
+			BaseURL:       strings.TrimSpace(os.Getenv("JIRA_BASE_URL")),
+			Deployment:    strings.ToLower(getEnv("JIRA_DEPLOYMENT", "cloud")),
+			Email:         strings.TrimSpace(os.Getenv("JIRA_EMAIL")),
+			APIToken:      strings.TrimSpace(os.Getenv("JIRA_API_TOKEN")),
+			PersonalToken: strings.TrimSpace(getEnv("JIRA_PERSONAL_ACCESS_TOKEN", os.Getenv("JIRA_PAT"))),
+			ProjectKey:    strings.TrimSpace(os.Getenv("JIRA_PROJECT_KEY")),
+			IssueType:     strings.TrimSpace(os.Getenv("JIRA_ISSUE_TYPE")),
+			HTTPTimeout:   getEnvDuration("JIRA_HTTP_TIMEOUT", 10*time.Second),
+		},
 		Workers: WorkersConfig{
 			Enabled: getEnvBool("WORKERS_ENABLED", true),
 			Timeout: getEnvDuration("WORKERS_TIMEOUT", 10*time.Minute),
@@ -205,6 +236,11 @@ func Load() Config {
 			Maintenance: MaintenanceWorkerConfig{
 				Enabled:  getEnvBool("WORKERS_MAINTENANCE_ENABLED", true),
 				Interval: getEnvDuration("WORKERS_MAINTENANCE_INTERVAL", time.Hour),
+			},
+			JiraSync: JiraSyncWorkerConfig{
+				Enabled:    getEnvBool("WORKERS_JIRA_SYNC_ENABLED", true),
+				Interval:   getEnvDuration("WORKERS_JIRA_SYNC_INTERVAL", 24*time.Hour),
+				WindowDays: getEnvInt("WORKERS_JIRA_SYNC_WINDOW_DAYS", 90),
 			},
 		},
 	}
@@ -220,6 +256,12 @@ func Load() Config {
 	if cfg.Notifications.SMTP.TLSMode == "" {
 		cfg.Notifications.SMTP.TLSMode = "starttls"
 	}
+	if cfg.Jira.Deployment == "" {
+		cfg.Jira.Deployment = "cloud"
+	}
+	if cfg.Jira.HTTPTimeout <= 0 {
+		cfg.Jira.HTTPTimeout = 10 * time.Second
+	}
 	if cfg.Workers.Timeout <= 0 {
 		cfg.Workers.Timeout = 10 * time.Minute
 	}
@@ -228,6 +270,12 @@ func Load() Config {
 	}
 	if cfg.Workers.Maintenance.Interval <= 0 {
 		cfg.Workers.Maintenance.Interval = time.Hour
+	}
+	if cfg.Workers.JiraSync.Interval <= 0 {
+		cfg.Workers.JiraSync.Interval = 24 * time.Hour
+	}
+	if cfg.Workers.JiraSync.WindowDays <= 0 {
+		cfg.Workers.JiraSync.WindowDays = 90
 	}
 	return cfg
 }
@@ -277,6 +325,32 @@ func (c Config) Validate() error {
 	}
 	if err := c.Notifications.Validate(); err != nil {
 		return err
+	}
+	if c.Jira.Enabled {
+		if _, err := url.ParseRequestURI(c.Jira.BaseURL); err != nil {
+			return fmt.Errorf("jira base url: %w", err)
+		}
+		switch c.Jira.Deployment {
+		case "cloud", "datacenter":
+		default:
+			return fmt.Errorf("jira deployment must be cloud or datacenter")
+		}
+		if c.Jira.ProjectKey == "" {
+			return fmt.Errorf("jira project key is required")
+		}
+		if c.Jira.IssueType == "" {
+			return fmt.Errorf("jira issue type is required")
+		}
+		switch c.Jira.Deployment {
+		case "cloud":
+			if c.Jira.Email == "" || c.Jira.APIToken == "" {
+				return fmt.Errorf("jira cloud email and api token are required")
+			}
+		case "datacenter":
+			if c.Jira.PersonalToken == "" {
+				return fmt.Errorf("jira datacenter personal access token is required")
+			}
+		}
 	}
 	if err := c.Workers.Validate(); err != nil {
 		return err
@@ -523,6 +597,12 @@ func (c WorkersConfig) Validate() error {
 		}
 		if c.Maintenance.Enabled && c.Maintenance.Interval <= 0 {
 			return fmt.Errorf("workers maintenance interval must be positive")
+		}
+		if c.JiraSync.Enabled && c.JiraSync.Interval <= 0 {
+			return fmt.Errorf("workers jira sync interval must be positive")
+		}
+		if c.JiraSync.Enabled && c.JiraSync.WindowDays <= 0 {
+			return fmt.Errorf("workers jira sync window days must be positive")
 		}
 	}
 	return nil

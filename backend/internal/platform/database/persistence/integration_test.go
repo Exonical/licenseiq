@@ -36,7 +36,7 @@ func testDB(t *testing.T) *gorm.DB {
 
 func truncateAll(t *testing.T, db *gorm.DB) {
 	t.Helper()
-	if err := db.Exec(`TRUNCATE TABLE renewal_reminder_logs, feature_flag_audits, feature_flags, audit_logs, api_keys, users, attachments, assignments, licenses, products, vendor_contacts, vendors RESTART IDENTITY CASCADE`).Error; err != nil {
+	if err := db.Exec(`TRUNCATE TABLE license_issue_links, renewal_reminder_logs, feature_flag_audits, feature_flags, audit_logs, api_keys, users, attachments, assignments, licenses, products, vendor_contacts, vendors RESTART IDENTITY CASCADE`).Error; err != nil {
 		t.Fatalf("truncate: %v", err)
 	}
 }
