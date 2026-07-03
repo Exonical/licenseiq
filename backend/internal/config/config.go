@@ -23,6 +23,7 @@ type Config struct {
 	Auth          AuthConfig
 	FeatureFlags  FeatureFlagsConfig
 	Notifications NotificationsConfig
+	Workers       WorkersConfig
 }
 
 type HTTPConfig struct {
@@ -89,6 +90,23 @@ type NotificationsConfig struct {
 	Slack       SlackNotificationsConfig
 	Teams       TeamsNotificationsConfig
 	Webhooks    WebhookNotificationsConfig
+}
+
+type WorkersConfig struct {
+	Enabled     bool
+	Timeout     time.Duration
+	Renewals    RenewalReminderWorkerConfig
+	Maintenance MaintenanceWorkerConfig
+}
+
+type RenewalReminderWorkerConfig struct {
+	Enabled  bool
+	Interval time.Duration
+}
+
+type MaintenanceWorkerConfig struct {
+	Enabled  bool
+	Interval time.Duration
 }
 
 type SMTPNotificationsConfig struct {
@@ -177,6 +195,18 @@ func Load() Config {
 			Teams:    TeamsNotificationsConfig{WebhookURL: strings.TrimSpace(os.Getenv("NOTIFICATIONS_TEAMS_WEBHOOK_URL"))},
 			Webhooks: WebhookNotificationsConfig{URLs: splitCSV(os.Getenv("NOTIFICATIONS_WEBHOOK_URLS"))},
 		},
+		Workers: WorkersConfig{
+			Enabled: getEnvBool("WORKERS_ENABLED", true),
+			Timeout: getEnvDuration("WORKERS_TIMEOUT", 10*time.Minute),
+			Renewals: RenewalReminderWorkerConfig{
+				Enabled:  getEnvBool("WORKERS_RENEWAL_REMINDERS_ENABLED", true),
+				Interval: getEnvDuration("WORKERS_RENEWAL_REMINDERS_INTERVAL", 24*time.Hour),
+			},
+			Maintenance: MaintenanceWorkerConfig{
+				Enabled:  getEnvBool("WORKERS_MAINTENANCE_ENABLED", true),
+				Interval: getEnvDuration("WORKERS_MAINTENANCE_INTERVAL", time.Hour),
+			},
+		},
 	}
 	if cfg.Auth.Bootstrap.AdminDisplayName == "" && cfg.Auth.Bootstrap.AdminEmail != "" {
 		cfg.Auth.Bootstrap.AdminDisplayName = cfg.Auth.Bootstrap.AdminEmail
@@ -189,6 +219,15 @@ func Load() Config {
 	}
 	if cfg.Notifications.SMTP.TLSMode == "" {
 		cfg.Notifications.SMTP.TLSMode = "starttls"
+	}
+	if cfg.Workers.Timeout <= 0 {
+		cfg.Workers.Timeout = 10 * time.Minute
+	}
+	if cfg.Workers.Renewals.Interval <= 0 {
+		cfg.Workers.Renewals.Interval = 24 * time.Hour
+	}
+	if cfg.Workers.Maintenance.Interval <= 0 {
+		cfg.Workers.Maintenance.Interval = time.Hour
 	}
 	return cfg
 }
@@ -237,6 +276,9 @@ func (c Config) Validate() error {
 		return err
 	}
 	if err := c.Notifications.Validate(); err != nil {
+		return err
+	}
+	if err := c.Workers.Validate(); err != nil {
 		return err
 	}
 	return nil
@@ -469,4 +511,19 @@ func validatePort(port int) error {
 func validateLogLevel(level string) error {
 	var parsed zapcore.Level
 	return parsed.UnmarshalText([]byte(strings.ToLower(strings.TrimSpace(level))))
+}
+
+func (c WorkersConfig) Validate() error {
+	if c.Timeout <= 0 {
+		return fmt.Errorf("workers timeout must be positive")
+	}
+	if c.Enabled {
+		if c.Renewals.Enabled && c.Renewals.Interval <= 0 {
+			return fmt.Errorf("workers renewal reminder interval must be positive")
+		}
+		if c.Maintenance.Enabled && c.Maintenance.Interval <= 0 {
+			return fmt.Errorf("workers maintenance interval must be positive")
+		}
+	}
+	return nil
 }

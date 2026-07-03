@@ -75,7 +75,7 @@ jobs:
         working-directory: backend
         env:
           LICENSEIQ_TEST_POSTGRES_DSN: postgres://licenseiq:licenseiq@localhost:5432/licenseiq?sslmode=disable
-        run: go test -tags=integration ./...
+        run: go test -tags=integration -p 1 ./...
 
   docker-build:
     runs-on: ubuntu-latest

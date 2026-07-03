@@ -166,8 +166,8 @@ func newAuthManager(t *testing.T, adminUser, viewerUser domain.User, adminToken,
 	t.Helper()
 	userRepo := &authUserRepo{items: map[uuid.UUID]domain.User{adminUser.ID: adminUser, viewerUser.ID: viewerUser}}
 	keyRepo := &authKeyRepo{itemsByKeyID: map[string]domain.APIKey{
-		"admin":  {Base: domain.Base{ID: uuid.New()}, OwnerUserID: adminUser.ID, KeyID: "admin", HashedKey: sha256Hex(adminToken), Name: "admin"},
-		"viewer": {Base: domain.Base{ID: uuid.New()}, OwnerUserID: viewerUser.ID, KeyID: "viewer", HashedKey: sha256Hex(viewerToken), Name: "viewer"},
+		"admin":  {Base: domain.Base{ID: uuid.New()}, OwnerUserID: adminUser.ID, KeyID: "admin", HashedKey: sha256Hex(adminToken), Name: "admin", Active: true},
+		"viewer": {Base: domain.Base{ID: uuid.New()}, OwnerUserID: viewerUser.ID, KeyID: "viewer", HashedKey: sha256Hex(viewerToken), Name: "viewer", Active: true},
 	}}
 	identity := app.NewIdentityService(userRepo, keyRepo, nil)
 	mgr, err := auth.NewManager(context.Background(), config.AuthConfig{}, identity, userRepo, keyRepo, zap.NewNop())

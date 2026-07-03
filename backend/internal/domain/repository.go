@@ -2,6 +2,7 @@ package domain
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -63,6 +64,13 @@ type APIKeyRepository interface {
 	Update(context.Context, *APIKey) error
 	Delete(context.Context, uuid.UUID) error
 	List(context.Context, ListFilter) ([]APIKey, error)
+}
+
+type RenewalReminderLogRepository interface {
+	Create(context.Context, *RenewalReminderLog) error
+	Get(context.Context, uuid.UUID) (*RenewalReminderLog, error)
+	GetByLicenseThresholdAndRenewalDate(context.Context, uuid.UUID, int, time.Time) (*RenewalReminderLog, error)
+	List(context.Context, ListFilter) ([]RenewalReminderLog, error)
 }
 
 type AuditRepository interface {

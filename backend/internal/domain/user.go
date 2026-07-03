@@ -25,6 +25,7 @@ type APIKey struct {
 	OwnerUserID uuid.UUID
 	Name        string
 	HashedKey   string
+	Active      bool
 	Scopes      []string
 	ExpiresAt   *time.Time
 	LastUsedAt  *time.Time

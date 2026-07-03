@@ -213,7 +213,7 @@ func TestAPIKeyAuthentication(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ident := &fakeIdentity{serviceAccount: &domain.User{Base: serviceUser.Base, Email: serviceUser.Email, Role: serviceUser.Role, IsServiceAccount: true, Active: true}}
 			keyRepo := &fakeAPIKeyRepo{keys: map[string]*domain.APIKey{}}
-			key := &domain.APIKey{Base: domain.Base{ID: uuid.New()}, KeyID: "key123", OwnerUserID: ident.serviceAccount.ID, Name: "ci", HashedKey: testHashAPIKey("liq_key123.abcdefghijklmnopqrstuvwxyz0123456789")}
+			key := &domain.APIKey{Base: domain.Base{ID: uuid.New()}, KeyID: "key123", OwnerUserID: ident.serviceAccount.ID, Name: "ci", Active: true, HashedKey: testHashAPIKey("liq_key123.abcdefghijklmnopqrstuvwxyz0123456789")}
 			keyRepo.keys[key.KeyID] = key
 			tc.prepare(keyRepo, ident)
 			manager := &Manager{identity: ident, users: fakeUserRepo{}, keys: keyRepo, logger: zap.NewNop()}
@@ -244,7 +244,7 @@ func TestMiddlewarePopulatesActorContext(t *testing.T) {
 	t.Parallel()
 	serviceUserID := uuid.New()
 	apiKeyID := uuid.New()
-	keyRepo := &fakeAPIKeyRepo{keys: map[string]*domain.APIKey{"key123": {Base: domain.Base{ID: apiKeyID}, KeyID: "key123", OwnerUserID: serviceUserID, Name: "ci", HashedKey: testHashAPIKey("liq_key123.abcdefghijklmnopqrstuvwxyz0123456789")}}}
+	keyRepo := &fakeAPIKeyRepo{keys: map[string]*domain.APIKey{"key123": {Base: domain.Base{ID: apiKeyID}, KeyID: "key123", OwnerUserID: serviceUserID, Name: "ci", Active: true, HashedKey: testHashAPIKey("liq_key123.abcdefghijklmnopqrstuvwxyz0123456789")}}}
 	identity := &fakeIdentity{serviceAccount: &domain.User{Base: domain.Base{ID: serviceUserID}, Email: "svc@example.com", Role: domain.RoleLicenseManager, IsServiceAccount: true, Active: true}}
 	manager := &Manager{identity: identity, users: fakeUserRepo{}, keys: keyRepo, logger: zap.NewNop()}
 
