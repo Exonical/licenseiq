@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	apilayer "github.com/Exonical/licenseiq/backend/internal/api"
+	"github.com/Exonical/licenseiq/backend/internal/app"
 	"github.com/Exonical/licenseiq/backend/internal/config"
 	"github.com/Exonical/licenseiq/backend/internal/logging"
 	"github.com/Exonical/licenseiq/backend/internal/platform/cache"
@@ -18,6 +20,7 @@ import (
 	"github.com/Exonical/licenseiq/backend/internal/server"
 	"github.com/Exonical/licenseiq/backend/internal/telemetry"
 	"github.com/Exonical/licenseiq/backend/internal/version"
+	"github.com/danielgtaylor/huma/v2/adapters/humagin"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -102,17 +105,30 @@ func runServer(cfg config.Config, logger *zap.Logger) error {
 		}()
 	}
 
-	checkers := []server.HealthChecker{database.Checker{DB: db}}
-	if valkeyClient != nil {
-		checkers = append(checkers, cache.Checker{Cache: valkeyClient})
-	}
 	engine := server.NewEngine(server.Options{
 		Logger:      logger,
 		ServiceName: cfg.OTel.ServiceName,
 		StartedAt:   time.Now().UTC(),
 		Version:     version.Current(),
-		Checkers:    checkers,
+		Checkers: func() []server.HealthChecker {
+			checkers := []server.HealthChecker{database.Checker{DB: db}}
+			if valkeyClient != nil {
+				checkers = append(checkers, cache.Checker{Cache: valkeyClient})
+			}
+			return checkers
+		}(),
 	})
+
+	humaAPI := humagin.New(engine, apilayer.NewHumaConfig("LicenseIQ API", version.Current().Version))
+	services := apilayer.Services{
+		Vendors:     app.NewVendorService(persistence.NewVendorRepository(db), persistence.NewAuditRepository(db)),
+		Products:    app.NewProductService(persistence.NewProductRepository(db), persistence.NewAuditRepository(db)),
+		Licenses:    app.NewLicenseService(persistence.NewLicenseRepository(db), persistence.NewAuditRepository(db)),
+		Assignments: app.NewAssignmentService(persistence.NewAssignmentRepository(db), persistence.NewAuditRepository(db)),
+		Attachments: app.NewAttachmentService(persistence.NewAttachmentRepository(db), persistence.NewAuditRepository(db)),
+	}
+	apilayer.RegisterRoutes(humaAPI, services, logger)
+	apilayer.MountDocs(engine)
 
 	httpServer := &http.Server{
 		Addr:           cfg.HTTP.Addr,

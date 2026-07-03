@@ -3,6 +3,7 @@ module github.com/Exonical/licenseiq/backend
 go 1.26
 
 require (
+	github.com/danielgtaylor/huma/v2 v2.38.0
 	github.com/gin-gonic/gin v1.12.0
 	github.com/google/uuid v1.6.0
 	github.com/prometheus/client_golang v1.23.2
