@@ -27,6 +27,7 @@ var permissionMatrix = map[Permission]domain.Role{
 	{Resource: "api_keys", Action: "write"}:         domain.RoleAdministrator,
 	{Resource: "api_keys", Action: "admin"}:         domain.RoleAdministrator,
 	{Resource: "audit_logs", Action: "read"}:        domain.RoleAuditor,
+	{Resource: "notifications", Action: "admin"}:    domain.RoleAdministrator,
 }
 
 func RequiredRole(resource, action string) (domain.Role, bool) {

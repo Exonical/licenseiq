@@ -15,13 +15,14 @@ import (
 )
 
 type Config struct {
-	HTTP         HTTPConfig
-	Postgres     PostgresConfig
-	Valkey       ValkeyConfig
-	Log          LogConfig
-	OTel         OTelConfig
-	Auth         AuthConfig
-	FeatureFlags FeatureFlagsConfig
+	HTTP          HTTPConfig
+	Postgres      PostgresConfig
+	Valkey        ValkeyConfig
+	Log           LogConfig
+	OTel          OTelConfig
+	Auth          AuthConfig
+	FeatureFlags  FeatureFlagsConfig
+	Notifications NotificationsConfig
 }
 
 type HTTPConfig struct {
@@ -82,6 +83,42 @@ type FeatureFlagsConfig struct {
 	Overrides map[string]bool
 }
 
+type NotificationsConfig struct {
+	HTTPTimeout time.Duration
+	SMTP        SMTPNotificationsConfig
+	Slack       SlackNotificationsConfig
+	Teams       TeamsNotificationsConfig
+	Discord     DiscordNotificationsConfig
+	Webhooks    WebhookNotificationsConfig
+}
+
+type SMTPNotificationsConfig struct {
+	Enabled    bool
+	Host       string
+	Port       int
+	Username   string
+	Password   string
+	From       string
+	Recipients []string
+	TLSMode    string
+}
+
+type SlackNotificationsConfig struct {
+	WebhookURL string
+}
+
+type TeamsNotificationsConfig struct {
+	WebhookURL string
+}
+
+type DiscordNotificationsConfig struct {
+	WebhookURL string
+}
+
+type WebhookNotificationsConfig struct {
+	URLs []string
+}
+
 func Load() Config {
 	cfg := Config{
 		HTTP: HTTPConfig{
@@ -129,12 +166,35 @@ func Load() Config {
 			},
 		},
 		FeatureFlags: FeatureFlagsConfig{Overrides: parseFeatureFlagOverrides(os.Environ())},
+		Notifications: NotificationsConfig{
+			HTTPTimeout: getEnvDuration("NOTIFICATIONS_HTTP_TIMEOUT", 10*time.Second),
+			SMTP: SMTPNotificationsConfig{
+				Enabled:    getEnvBool("NOTIFICATIONS_SMTP_ENABLED", false),
+				Host:       strings.TrimSpace(os.Getenv("NOTIFICATIONS_SMTP_HOST")),
+				Port:       getEnvInt("NOTIFICATIONS_SMTP_PORT", 587),
+				Username:   strings.TrimSpace(os.Getenv("NOTIFICATIONS_SMTP_USERNAME")),
+				Password:   os.Getenv("NOTIFICATIONS_SMTP_PASSWORD"),
+				From:       strings.TrimSpace(os.Getenv("NOTIFICATIONS_SMTP_FROM")),
+				Recipients: splitCSV(os.Getenv("NOTIFICATIONS_SMTP_RECIPIENTS")),
+				TLSMode:    strings.ToLower(strings.TrimSpace(getEnv("NOTIFICATIONS_SMTP_TLS_MODE", "starttls"))),
+			},
+			Slack:    SlackNotificationsConfig{WebhookURL: strings.TrimSpace(os.Getenv("NOTIFICATIONS_SLACK_WEBHOOK_URL"))},
+			Teams:    TeamsNotificationsConfig{WebhookURL: strings.TrimSpace(os.Getenv("NOTIFICATIONS_TEAMS_WEBHOOK_URL"))},
+			Discord:  DiscordNotificationsConfig{WebhookURL: strings.TrimSpace(os.Getenv("NOTIFICATIONS_DISCORD_WEBHOOK_URL"))},
+			Webhooks: WebhookNotificationsConfig{URLs: splitCSV(os.Getenv("NOTIFICATIONS_WEBHOOK_URLS"))},
+		},
 	}
 	if cfg.Auth.Bootstrap.AdminDisplayName == "" && cfg.Auth.Bootstrap.AdminEmail != "" {
 		cfg.Auth.Bootstrap.AdminDisplayName = cfg.Auth.Bootstrap.AdminEmail
 	}
 	if len(cfg.Auth.OIDC.RoleMappings) == 0 {
 		cfg.Auth.OIDC.RoleMappings = map[string]domain.Role{}
+	}
+	if cfg.Notifications.HTTPTimeout <= 0 {
+		cfg.Notifications.HTTPTimeout = 10 * time.Second
+	}
+	if cfg.Notifications.SMTP.TLSMode == "" {
+		cfg.Notifications.SMTP.TLSMode = "starttls"
 	}
 	return cfg
 }
@@ -180,6 +240,9 @@ func (c Config) Validate() error {
 		return fmt.Errorf("otel service name is required")
 	}
 	if err := c.Auth.Validate(); err != nil {
+		return err
+	}
+	if err := c.Notifications.Validate(); err != nil {
 		return err
 	}
 	return nil
@@ -242,6 +305,32 @@ func (c OIDCConfig) ScopesOrDefault() []string {
 		return []string{"openid", "profile", "email"}
 	}
 	return append([]string(nil), c.Scopes...)
+}
+
+func (c NotificationsConfig) Validate() error {
+	if c.HTTPTimeout <= 0 {
+		return fmt.Errorf("notifications http timeout must be positive")
+	}
+	if c.SMTP.Enabled {
+		if strings.TrimSpace(c.SMTP.Host) == "" {
+			return fmt.Errorf("notifications smtp host is required when enabled")
+		}
+		if c.SMTP.Port < 1 || c.SMTP.Port > 65535 {
+			return fmt.Errorf("notifications smtp port must be between 1 and 65535")
+		}
+		if strings.TrimSpace(c.SMTP.From) == "" {
+			return fmt.Errorf("notifications smtp from is required when enabled")
+		}
+		if len(c.SMTP.Recipients) == 0 {
+			return fmt.Errorf("notifications smtp recipients are required when enabled")
+		}
+		switch c.SMTP.TLSMode {
+		case "", "off", "starttls", "implicit":
+		default:
+			return fmt.Errorf("notifications smtp tls mode must be off, starttls, or implicit")
+		}
+	}
+	return nil
 }
 
 func getEnv(key, fallback string) string {
