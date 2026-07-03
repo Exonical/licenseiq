@@ -24,6 +24,7 @@ func registerAttachmentRoutes(api huma.API, svc app.AttachmentService, logger *z
 		o.DefaultStatus = http.StatusCreated
 		o.Tags = []string{"Attachments"}
 		o.Errors = operationErrors()
+		protectedOperation("attachments", "write")(o)
 	})
 
 	huma.Get(api, "/attachments", func(ctx context.Context, input *struct{ ListInput }) (*AttachmentListOutput, error) {
@@ -43,6 +44,7 @@ func registerAttachmentRoutes(api huma.API, svc app.AttachmentService, logger *z
 		o.Description = "List attachment metadata with pagination."
 		o.Tags = []string{"Attachments"}
 		o.Errors = operationErrors()
+		protectedOperation("attachments", "read")(o)
 	})
 
 	huma.Get(api, "/attachments/{id}", func(ctx context.Context, input *struct {
@@ -59,6 +61,7 @@ func registerAttachmentRoutes(api huma.API, svc app.AttachmentService, logger *z
 		o.Description = "Get attachment metadata by id."
 		o.Tags = []string{"Attachments"}
 		o.Errors = operationErrors()
+		protectedOperation("attachments", "read")(o)
 	})
 
 	huma.Delete(api, "/attachments/{id}", func(ctx context.Context, input *struct {
@@ -75,5 +78,6 @@ func registerAttachmentRoutes(api huma.API, svc app.AttachmentService, logger *z
 		o.DefaultStatus = http.StatusNoContent
 		o.Tags = []string{"Attachments"}
 		o.Errors = operationErrors()
+		protectedOperation("attachments", "write")(o)
 	})
 }

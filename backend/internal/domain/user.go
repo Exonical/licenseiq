@@ -21,6 +21,7 @@ type User struct {
 
 type APIKey struct {
 	Base
+	KeyID       string
 	OwnerUserID uuid.UUID
 	Name        string
 	HashedKey   string
@@ -53,8 +54,12 @@ func (a *APIKey) Validate() error {
 		return fmt.Errorf("%w: api key is nil", ErrValidation)
 	}
 	a.Name = strings.TrimSpace(a.Name)
+	a.KeyID = strings.TrimSpace(a.KeyID)
 	a.HashedKey = strings.TrimSpace(a.HashedKey)
 	a.Scopes = trimStrings(a.Scopes)
+	if a.KeyID == "" {
+		return fmt.Errorf("%w: api key key id is required", ErrValidation)
+	}
 	if a.OwnerUserID == uuid.Nil {
 		return fmt.Errorf("%w: api key owner user id is required", ErrValidation)
 	}

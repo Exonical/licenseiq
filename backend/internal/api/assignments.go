@@ -24,6 +24,7 @@ func registerAssignmentRoutes(api huma.API, svc app.AssignmentService, logger *z
 		o.DefaultStatus = http.StatusCreated
 		o.Tags = []string{"Assignments"}
 		o.Errors = operationErrors()
+		protectedOperation("assignments", "write")(o)
 	})
 
 	huma.Get(api, "/assignments", func(ctx context.Context, input *struct{ ListInput }) (*AssignmentListOutput, error) {
@@ -43,6 +44,7 @@ func registerAssignmentRoutes(api huma.API, svc app.AssignmentService, logger *z
 		o.Description = "List assignments with pagination."
 		o.Tags = []string{"Assignments"}
 		o.Errors = operationErrors()
+		protectedOperation("assignments", "read")(o)
 	})
 
 	huma.Get(api, "/assignments/{id}", func(ctx context.Context, input *struct {
@@ -59,6 +61,7 @@ func registerAssignmentRoutes(api huma.API, svc app.AssignmentService, logger *z
 		o.Description = "Get a single assignment by id."
 		o.Tags = []string{"Assignments"}
 		o.Errors = operationErrors()
+		protectedOperation("assignments", "read")(o)
 	})
 
 	huma.Put(api, "/assignments/{id}", func(ctx context.Context, input *struct {
@@ -76,6 +79,7 @@ func registerAssignmentRoutes(api huma.API, svc app.AssignmentService, logger *z
 		o.Description = "Update an assignment record."
 		o.Tags = []string{"Assignments"}
 		o.Errors = operationErrors()
+		protectedOperation("assignments", "write")(o)
 	})
 
 	huma.Delete(api, "/assignments/{id}", func(ctx context.Context, input *struct {
@@ -92,5 +96,6 @@ func registerAssignmentRoutes(api huma.API, svc app.AssignmentService, logger *z
 		o.DefaultStatus = http.StatusNoContent
 		o.Tags = []string{"Assignments"}
 		o.Errors = operationErrors()
+		protectedOperation("assignments", "write")(o)
 	})
 }

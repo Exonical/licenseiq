@@ -18,6 +18,7 @@ type LicenseRepository struct{ db *gorm.DB }
 type AssignmentRepository struct{ db *gorm.DB }
 type AttachmentRepository struct{ db *gorm.DB }
 type UserRepository struct{ db *gorm.DB }
+type APIKeyRepository struct{ db *gorm.DB }
 type AuditRepository struct{ db *gorm.DB }
 type FeatureFlagRepository struct{ db *gorm.DB }
 
@@ -27,6 +28,7 @@ func NewLicenseRepository(db *gorm.DB) *LicenseRepository       { return &Licens
 func NewAssignmentRepository(db *gorm.DB) *AssignmentRepository { return &AssignmentRepository{db: db} }
 func NewAttachmentRepository(db *gorm.DB) *AttachmentRepository { return &AttachmentRepository{db: db} }
 func NewUserRepository(db *gorm.DB) *UserRepository             { return &UserRepository{db: db} }
+func NewAPIKeyRepository(db *gorm.DB) *APIKeyRepository         { return &APIKeyRepository{db: db} }
 func NewAuditRepository(db *gorm.DB) *AuditRepository           { return &AuditRepository{db: db} }
 func NewFeatureFlagRepository(db *gorm.DB) *FeatureFlagRepository {
 	return &FeatureFlagRepository{db: db}
@@ -389,6 +391,24 @@ func (r *UserRepository) Get(ctx context.Context, id uuid.UUID) (*domain.User, e
 	return &entity, nil
 }
 
+func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
+	var model UserModel
+	if err := r.db.WithContext(ctx).First(&model, "email = ?", email).Error; err != nil {
+		return nil, mapError(err)
+	}
+	entity := userToDomain(model)
+	return &entity, nil
+}
+
+func (r *UserRepository) GetByExternalSubject(ctx context.Context, subject string) (*domain.User, error) {
+	var model UserModel
+	if err := r.db.WithContext(ctx).First(&model, "external_subject = ?", subject).Error; err != nil {
+		return nil, mapError(err)
+	}
+	entity := userToDomain(model)
+	return &entity, nil
+}
+
 func (r *UserRepository) Update(ctx context.Context, entity *domain.User) error {
 	if err := entity.Validate(); err != nil {
 		return err
@@ -413,6 +433,65 @@ func (r *UserRepository) List(ctx context.Context, filter domain.ListFilter) ([]
 	out := make([]domain.User, 0, len(models))
 	for _, m := range models {
 		out = append(out, userToDomain(m))
+	}
+	return out, nil
+}
+
+// API keys
+func (r *APIKeyRepository) Create(ctx context.Context, entity *domain.APIKey) error {
+	if err := entity.Validate(); err != nil {
+		return err
+	}
+	model := apiKeyToModel(*entity)
+	if err := r.db.WithContext(ctx).Create(&model).Error; err != nil {
+		return mapError(err)
+	}
+	*entity = apiKeyToDomain(model)
+	return nil
+}
+
+func (r *APIKeyRepository) Get(ctx context.Context, id uuid.UUID) (*domain.APIKey, error) {
+	var model APIKeyModel
+	if err := r.db.WithContext(ctx).First(&model, "id = ?", id).Error; err != nil {
+		return nil, mapError(err)
+	}
+	entity := apiKeyToDomain(model)
+	return &entity, nil
+}
+
+func (r *APIKeyRepository) GetByKeyID(ctx context.Context, keyID string) (*domain.APIKey, error) {
+	var model APIKeyModel
+	if err := r.db.WithContext(ctx).First(&model, "key_id = ?", keyID).Error; err != nil {
+		return nil, mapError(err)
+	}
+	entity := apiKeyToDomain(model)
+	return &entity, nil
+}
+
+func (r *APIKeyRepository) Update(ctx context.Context, entity *domain.APIKey) error {
+	if err := entity.Validate(); err != nil {
+		return err
+	}
+	model := apiKeyToModel(*entity)
+	if err := r.db.WithContext(ctx).Save(&model).Error; err != nil {
+		return mapError(err)
+	}
+	*entity = apiKeyToDomain(model)
+	return nil
+}
+
+func (r *APIKeyRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	return mapError(r.db.WithContext(ctx).Delete(&APIKeyModel{}, "id = ?", id).Error)
+}
+
+func (r *APIKeyRepository) List(ctx context.Context, filter domain.ListFilter) ([]domain.APIKey, error) {
+	var models []APIKeyModel
+	if err := baseQuery(r.db.WithContext(ctx), filter).Order("created_at DESC").Find(&models).Error; err != nil {
+		return nil, mapError(err)
+	}
+	out := make([]domain.APIKey, 0, len(models))
+	for _, m := range models {
+		out = append(out, apiKeyToDomain(m))
 	}
 	return out, nil
 }
