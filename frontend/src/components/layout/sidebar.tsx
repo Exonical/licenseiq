@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 
 const sections = [
   { href: "/", label: "Dashboard", icon: Home, enabled: true },
-  { href: "/licenses", label: "Licenses", icon: Database, enabled: false },
-  { href: "/vendors", label: "Vendors", icon: Users, enabled: false },
-  { href: "/products", label: "Products", icon: Boxes, enabled: false },
+  { href: "/licenses", label: "Licenses", icon: Database, enabled: true },
+  { href: "/vendors", label: "Vendors", icon: Users, enabled: true },
+  { href: "/products", label: "Products", icon: Boxes, enabled: true },
   { href: "/assignments", label: "Assignments", icon: Tags, enabled: false },
   { href: "/reports", label: "Reports", icon: BarChart3, enabled: false },
   { href: "/search", label: "Search", icon: Search, enabled: false },
@@ -32,7 +32,7 @@ export function Sidebar() {
       </div>
       <nav className="flex-1 space-y-1 p-3" aria-label="Primary">
         {sections.map((item) => {
-          const active = pathname === item.href;
+          const active = item.enabled && (pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href)));
           const Icon = item.icon;
           if (!item.enabled) {
             return (

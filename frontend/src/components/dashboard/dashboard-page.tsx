@@ -25,6 +25,9 @@ type SectionCardProps = {
   details?: ReactNode;
 };
 
+type ReportRow = string[];
+type ReportTotal = { label: string; values: string[] };
+
 function SectionCard({ title, description, value, loading, error, icon: Icon, details }: SectionCardProps) {
   return (
     <Card className="h-full">
@@ -58,13 +61,13 @@ export function DashboardPage() {
     ],
   });
 
-  const upcomingRows = renewals.data?.rows ?? [];
-  const expiredRows = expired.data?.rows ?? [];
-  const utilizationRows = utilization.data?.rows ?? [];
-  const vendorRows = vendorSpend.data?.rows ?? [];
-  const licenseRows = licenses.data?.data ?? [];
+  const upcomingRows = (renewals.data?.rows ?? []) as ReportRow[];
+  const expiredRows = (expired.data?.rows ?? []) as ReportRow[];
+  const utilizationRows = (utilization.data?.rows ?? []) as ReportRow[];
+  const vendorRows = (vendorSpend.data?.rows ?? []) as ReportRow[];
+  const licenseRows = (licenses.data?.data ?? []) as Array<{ id: string; licenseKey?: string | null; department?: string | null }>;
   const unassignedCount = licenseRows.filter((license) => !license.department?.trim()).length;
-  const vendorTotals = vendorSpend.data?.totals ?? [];
+  const vendorTotals = (vendorSpend.data?.totals ?? []) as ReportTotal[];
 
   const cards = [
     {
@@ -74,7 +77,7 @@ export function DashboardPage() {
       loading: renewals.isLoading,
       error: renewals.error ? "Renewals report unavailable" : null,
       icon: ArrowUpRight,
-      details: <CompactTable headers={["License", "Renewal"]} rows={upcomingRows.slice(0, 3).map((row) => [row[0], row[3]])} emptyLabel="No upcoming renewals." />,
+      details: <CompactTable headers={["License", "Renewal"]} rows={upcomingRows.slice(0, 3).map((row: ReportRow) => [row[0], row[3]])} emptyLabel="No upcoming renewals." />,
     },
     {
       title: "Expiring licenses",
@@ -83,16 +86,16 @@ export function DashboardPage() {
       loading: expired.isLoading,
       error: expired.error ? "Expired licenses report unavailable" : null,
       icon: ShieldAlert,
-      details: <CompactTable headers={["License", "Expired by"]} rows={expiredRows.slice(0, 3).map((row) => [row[0], row[6]])} emptyLabel="No expired licenses." />,
+      details: <CompactTable headers={["License", "Expired by"]} rows={expiredRows.slice(0, 3).map((row: ReportRow) => [row[0], row[6]])} emptyLabel="No expired licenses." />,
     },
     {
       title: "License utilization",
       description: "Seat counts and utilization overview",
-      value: utilization.data?.totals?.[0]?.values?.[3] ?? "—",
+      value: (utilization.data?.totals?.[0]?.values?.[3] as string | undefined) ?? "—",
       loading: utilization.isLoading,
       error: utilization.error ? "Utilization report unavailable" : null,
       icon: PieChart,
-      details: <CompactTable headers={["License", "Utilization"]} rows={utilizationRows.slice(0, 3).map((row) => [row[0], row[6]])} emptyLabel="No utilization data." />,
+      details: <CompactTable headers={["License", "Utilization"]} rows={utilizationRows.slice(0, 3).map((row: ReportRow) => [row[0], row[6]])} emptyLabel="No utilization data." />,
     },
     {
       title: "Vendor spend",
@@ -101,7 +104,7 @@ export function DashboardPage() {
       loading: vendorSpend.isLoading,
       error: vendorSpend.error ? "Vendor spend report unavailable" : null,
       icon: WalletCards,
-      details: <CompactTable headers={["Vendor", "Currency", "Total"]} rows={vendorRows.slice(0, 3).map((row) => [row[0], row[1], row[2]])} emptyLabel="No vendor spend data." />,
+      details: <CompactTable headers={["Vendor", "Currency", "Total"]} rows={vendorRows.slice(0, 3).map((row: ReportRow) => [row[0], row[1], row[2]])} emptyLabel="No vendor spend data." />,
     },
     {
       title: "Monthly spend",
@@ -169,15 +172,15 @@ function ReportPreview({ title, description, report, loading, error }: { title: 
             <Table>
               <TableHeader>
                 <TableRow>
-                  {report.columns.slice(0, 4).map((column) => (
+                  {(report.columns as string[]).slice(0, 4).map((column: string) => (
                     <TableHead key={column}>{column}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {report.rows.slice(0, 5).map((row, index) => (
+                {(report.rows as ReportRow[]).slice(0, 5).map((row: ReportRow, index: number) => (
                   <TableRow key={`${report.title}-${index}`}>
-                    {row.slice(0, 4).map((cell, cellIndex) => (
+                    {row.slice(0, 4).map((cell: string, cellIndex: number) => (
                       <TableCell key={`${cell}-${cellIndex}`}>{cell || "—"}</TableCell>
                     ))}
                   </TableRow>
@@ -195,7 +198,7 @@ function ReportPreview({ title, description, report, loading, error }: { title: 
               <div className="rounded-lg border bg-muted/40 p-4 text-sm">
                 <p className="mb-2 font-medium text-foreground">Totals</p>
                 <div className="space-y-1 text-muted-foreground">
-                  {report.totals.map((total) => (
+                  {(report.totals as ReportTotal[]).map((total: ReportTotal) => (
                     <p key={total.label}>
                       <span className="font-medium text-foreground">{total.label}:</span> {total.values.join(" • ")}
                     </p>
