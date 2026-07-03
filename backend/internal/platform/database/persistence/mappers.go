@@ -213,6 +213,32 @@ func userToDomain(m UserModel) domain.User {
 	}
 }
 
+func apiKeyToModel(k domain.APIKey) APIKeyModel {
+	return APIKeyModel{
+		BaseModel:   newBaseModel(k.Base),
+		KeyID:       k.KeyID,
+		OwnerUserID: k.OwnerUserID,
+		Name:        k.Name,
+		HashedKey:   k.HashedKey,
+		Scopes:      append([]string(nil), k.Scopes...),
+		ExpiresAt:   k.ExpiresAt,
+		LastUsedAt:  k.LastUsedAt,
+	}
+}
+
+func apiKeyToDomain(m APIKeyModel) domain.APIKey {
+	return domain.APIKey{
+		Base:        domain.Base{ID: m.ID, CreatedAt: m.CreatedAt, UpdatedAt: m.UpdatedAt},
+		KeyID:       m.KeyID,
+		OwnerUserID: m.OwnerUserID,
+		Name:        m.Name,
+		HashedKey:   m.HashedKey,
+		Scopes:      append([]string(nil), m.Scopes...),
+		ExpiresAt:   m.ExpiresAt,
+		LastUsedAt:  m.LastUsedAt,
+	}
+}
+
 func auditToModel(a domain.AuditLog) AuditLogModel {
 	return AuditLogModel{
 		AuditBaseModel: newAuditBaseModel(a.Base),

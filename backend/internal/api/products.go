@@ -24,6 +24,7 @@ func registerProductRoutes(api huma.API, svc app.ProductService, logger *zap.Log
 		o.DefaultStatus = http.StatusCreated
 		o.Tags = []string{"Products"}
 		o.Errors = operationErrors()
+		protectedOperation("products", "write")(o)
 	})
 
 	huma.Get(api, "/products", func(ctx context.Context, input *struct{ ListInput }) (*ProductListOutput, error) {
@@ -43,6 +44,7 @@ func registerProductRoutes(api huma.API, svc app.ProductService, logger *zap.Log
 		o.Description = "List products with pagination."
 		o.Tags = []string{"Products"}
 		o.Errors = operationErrors()
+		protectedOperation("products", "read")(o)
 	})
 
 	huma.Get(api, "/products/{id}", func(ctx context.Context, input *struct {
@@ -59,6 +61,7 @@ func registerProductRoutes(api huma.API, svc app.ProductService, logger *zap.Log
 		o.Description = "Get a single product by id."
 		o.Tags = []string{"Products"}
 		o.Errors = operationErrors()
+		protectedOperation("products", "read")(o)
 	})
 
 	huma.Put(api, "/products/{id}", func(ctx context.Context, input *struct {
@@ -76,6 +79,7 @@ func registerProductRoutes(api huma.API, svc app.ProductService, logger *zap.Log
 		o.Description = "Update a product."
 		o.Tags = []string{"Products"}
 		o.Errors = operationErrors()
+		protectedOperation("products", "write")(o)
 	})
 
 	huma.Delete(api, "/products/{id}", func(ctx context.Context, input *struct {
@@ -92,5 +96,6 @@ func registerProductRoutes(api huma.API, svc app.ProductService, logger *zap.Log
 		o.Tags = []string{"Products"}
 		o.DefaultStatus = http.StatusNoContent
 		o.Errors = operationErrors()
+		protectedOperation("products", "write")(o)
 	})
 }
