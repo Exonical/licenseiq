@@ -122,7 +122,9 @@ func (UserModel) TableName() string { return "users" }
 
 type APIKeyModel struct {
 	BaseModel
+	KeyID       string    `gorm:"uniqueIndex"`
 	OwnerUserID uuid.UUID `gorm:"type:uuid;index"`
+	Owner       UserModel `gorm:"foreignKey:OwnerUserID;references:ID;constraint:OnDelete:CASCADE"`
 	Name        string
 	HashedKey   string   `gorm:"uniqueIndex"`
 	Scopes      []string `gorm:"type:jsonb;serializer:json"`

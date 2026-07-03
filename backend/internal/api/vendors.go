@@ -24,6 +24,7 @@ func registerVendorRoutes(api huma.API, svc app.VendorService, logger *zap.Logge
 		o.DefaultStatus = http.StatusCreated
 		o.Tags = []string{"Vendors"}
 		o.Errors = operationErrors()
+		protectedOperation("vendors", "write")(o)
 	})
 
 	huma.Get(api, "/vendors", func(ctx context.Context, input *struct{ ListInput }) (*VendorListOutput, error) {
@@ -43,6 +44,7 @@ func registerVendorRoutes(api huma.API, svc app.VendorService, logger *zap.Logge
 		o.Description = "List vendors with pagination."
 		o.Tags = []string{"Vendors"}
 		o.Errors = operationErrors()
+		protectedOperation("vendors", "read")(o)
 	})
 
 	huma.Get(api, "/vendors/{id}", func(ctx context.Context, input *struct {
@@ -59,6 +61,7 @@ func registerVendorRoutes(api huma.API, svc app.VendorService, logger *zap.Logge
 		o.Description = "Get a single vendor by id."
 		o.Tags = []string{"Vendors"}
 		o.Errors = operationErrors()
+		protectedOperation("vendors", "read")(o)
 	})
 
 	huma.Put(api, "/vendors/{id}", func(ctx context.Context, input *struct {
@@ -76,6 +79,7 @@ func registerVendorRoutes(api huma.API, svc app.VendorService, logger *zap.Logge
 		o.Description = "Update a vendor and replace its contacts."
 		o.Tags = []string{"Vendors"}
 		o.Errors = operationErrors()
+		protectedOperation("vendors", "write")(o)
 	})
 
 	huma.Delete(api, "/vendors/{id}", func(ctx context.Context, input *struct {
@@ -92,5 +96,6 @@ func registerVendorRoutes(api huma.API, svc app.VendorService, logger *zap.Logge
 		o.Tags = []string{"Vendors"}
 		o.DefaultStatus = http.StatusNoContent
 		o.Errors = operationErrors()
+		protectedOperation("vendors", "write")(o)
 	})
 }

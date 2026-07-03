@@ -3,21 +3,25 @@ package config
 import (
 	"fmt"
 	"net"
+	"net/mail"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/Exonical/licenseiq/backend/internal/domain"
 	"go.uber.org/zap/zapcore"
 )
 
 type Config struct {
-	HTTP     HTTPConfig
-	Postgres PostgresConfig
-	Valkey   ValkeyConfig
-	Log      LogConfig
-	OTel     OTelConfig
+	HTTP         HTTPConfig
+	Postgres     PostgresConfig
+	Valkey       ValkeyConfig
+	Log          LogConfig
+	OTel         OTelConfig
+	Auth         AuthConfig
+	FeatureFlags FeatureFlagsConfig
 }
 
 type HTTPConfig struct {
@@ -51,6 +55,33 @@ type OTelConfig struct {
 	ServiceName string
 }
 
+type AuthConfig struct {
+	OIDC      OIDCConfig
+	Bootstrap BootstrapConfig
+}
+
+type OIDCConfig struct {
+	IssuerURL    string
+	ClientID     string
+	ClientSecret string
+	Audience     string
+	Scopes       []string
+	RoleClaim    string
+	RoleMappings map[string]domain.Role
+	DefaultRole  domain.Role
+}
+
+type BootstrapConfig struct {
+	AdminEmail       string
+	AdminDisplayName string
+	AdminAPIKey      string
+	AdminAPIKeyName  string
+}
+
+type FeatureFlagsConfig struct {
+	Overrides map[string]bool
+}
+
 func Load() Config {
 	cfg := Config{
 		HTTP: HTTPConfig{
@@ -79,6 +110,31 @@ func Load() Config {
 			Endpoint:    os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
 			ServiceName: getEnv("OTEL_SERVICE_NAME", "licenseiq"),
 		},
+		Auth: AuthConfig{
+			OIDC: OIDCConfig{
+				IssuerURL:    strings.TrimSpace(os.Getenv("OIDC_ISSUER_URL")),
+				ClientID:     strings.TrimSpace(os.Getenv("OIDC_CLIENT_ID")),
+				ClientSecret: strings.TrimSpace(os.Getenv("OIDC_CLIENT_SECRET")),
+				Audience:     strings.TrimSpace(os.Getenv("OIDC_AUDIENCE")),
+				Scopes:       splitCSV(getEnv("OIDC_SCOPES", "openid,profile,email")),
+				RoleClaim:    getEnv("OIDC_ROLE_CLAIM", "groups"),
+				RoleMappings: parseRoleMappings(os.Getenv("OIDC_ROLE_MAPPINGS")),
+				DefaultRole:  parseRole(getEnv("OIDC_DEFAULT_ROLE", string(domain.RoleViewer))),
+			},
+			Bootstrap: BootstrapConfig{
+				AdminEmail:       strings.TrimSpace(os.Getenv("BOOTSTRAP_ADMIN_EMAIL")),
+				AdminDisplayName: strings.TrimSpace(os.Getenv("BOOTSTRAP_ADMIN_DISPLAY_NAME")),
+				AdminAPIKey:      strings.TrimSpace(os.Getenv("BOOTSTRAP_ADMIN_API_KEY")),
+				AdminAPIKeyName:  getEnv("BOOTSTRAP_ADMIN_API_KEY_NAME", "bootstrap-admin"),
+			},
+		},
+		FeatureFlags: FeatureFlagsConfig{Overrides: parseFeatureFlagOverrides(os.Environ())},
+	}
+	if cfg.Auth.Bootstrap.AdminDisplayName == "" && cfg.Auth.Bootstrap.AdminEmail != "" {
+		cfg.Auth.Bootstrap.AdminDisplayName = cfg.Auth.Bootstrap.AdminEmail
+	}
+	if len(cfg.Auth.OIDC.RoleMappings) == 0 {
+		cfg.Auth.OIDC.RoleMappings = map[string]domain.Role{}
 	}
 	return cfg
 }
@@ -123,6 +179,48 @@ func (c Config) Validate() error {
 	if strings.TrimSpace(c.OTel.ServiceName) == "" {
 		return fmt.Errorf("otel service name is required")
 	}
+	if err := c.Auth.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c AuthConfig) Validate() error {
+	if err := c.OIDC.Validate(); err != nil {
+		return err
+	}
+	if c.Bootstrap.AdminEmail != "" {
+		if _, err := parseEmail(c.Bootstrap.AdminEmail); err != nil {
+			return fmt.Errorf("bootstrap admin email: %w", err)
+		}
+	}
+	if c.Bootstrap.AdminAPIKeyName == "" {
+		return fmt.Errorf("bootstrap admin api key name is required")
+	}
+	return nil
+}
+
+func (c OIDCConfig) Validate() error {
+	if c.IssuerURL == "" {
+		return nil
+	}
+	if c.ClientID == "" {
+		return fmt.Errorf("oidc client id is required when issuer url is configured")
+	}
+	if c.RoleClaim == "" {
+		return fmt.Errorf("oidc role claim is required")
+	}
+	if err := c.DefaultRole.Validate(); err != nil {
+		return fmt.Errorf("oidc default role: %w", err)
+	}
+	for claimValue, role := range c.RoleMappings {
+		if claimValue == "" {
+			return fmt.Errorf("oidc role mapping claim value is required")
+		}
+		if err := role.Validate(); err != nil {
+			return fmt.Errorf("oidc role mapping for %q: %w", claimValue, err)
+		}
+	}
 	return nil
 }
 
@@ -137,6 +235,13 @@ func (c PostgresConfig) DSN() string {
 	q.Set("sslmode", c.SSLMode)
 	u.RawQuery = q.Encode()
 	return u.String()
+}
+
+func (c OIDCConfig) ScopesOrDefault() []string {
+	if len(c.Scopes) == 0 {
+		return []string{"openid", "profile", "email"}
+	}
+	return append([]string(nil), c.Scopes...)
 }
 
 func getEnv(key, fallback string) string {
@@ -180,6 +285,85 @@ func getEnvBool(key string, fallback bool) bool {
 		return fallback
 	}
 	return value
+}
+
+func splitCSV(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part = strings.TrimSpace(part); part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
+}
+
+func parseRoleMappings(value string) map[string]domain.Role {
+	out := map[string]domain.Role{}
+	for _, item := range splitCSV(value) {
+		parts := strings.SplitN(item, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		claimValue := strings.TrimSpace(parts[0])
+		role := parseRole(parts[1])
+		if claimValue != "" {
+			out[claimValue] = role
+		}
+	}
+	return out
+}
+
+func parseRole(value string) domain.Role {
+	role, err := domain.ParseRole(value)
+	if err != nil {
+		return domain.RoleViewer
+	}
+	return role
+}
+
+func parseFeatureFlagOverrides(values []string) map[string]bool {
+	overrides := map[string]bool{}
+	for _, entry := range values {
+		key, value, ok := strings.Cut(entry, "=")
+		if !ok || !strings.HasPrefix(key, "FEATUREFLAG_") {
+			continue
+		}
+		normalizedKey := normalizeFeatureFlagKey(strings.TrimPrefix(key, "FEATUREFLAG_"))
+		if normalizedKey == "" {
+			continue
+		}
+		parsed, err := strconv.ParseBool(strings.TrimSpace(value))
+		if err != nil {
+			continue
+		}
+		overrides[normalizedKey] = parsed
+	}
+	return overrides
+}
+
+func normalizeFeatureFlagKey(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	value = strings.ToLower(value)
+	value = strings.ReplaceAll(value, "_", "-")
+	return value
+}
+
+func parseEmail(value string) (string, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", fmt.Errorf("value is required")
+	}
+	if _, err := mail.ParseAddress(value); err != nil {
+		return "", err
+	}
+	return value, nil
 }
 
 func validateAddr(value string) error {

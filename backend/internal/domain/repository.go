@@ -49,9 +49,20 @@ type AttachmentRepository interface {
 type UserRepository interface {
 	Create(context.Context, *User) error
 	Get(context.Context, uuid.UUID) (*User, error)
+	GetByEmail(context.Context, string) (*User, error)
+	GetByExternalSubject(context.Context, string) (*User, error)
 	Update(context.Context, *User) error
 	Delete(context.Context, uuid.UUID) error
 	List(context.Context, ListFilter) ([]User, error)
+}
+
+type APIKeyRepository interface {
+	Create(context.Context, *APIKey) error
+	Get(context.Context, uuid.UUID) (*APIKey, error)
+	GetByKeyID(context.Context, string) (*APIKey, error)
+	Update(context.Context, *APIKey) error
+	Delete(context.Context, uuid.UUID) error
+	List(context.Context, ListFilter) ([]APIKey, error)
 }
 
 type AuditRepository interface {

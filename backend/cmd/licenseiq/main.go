@@ -12,7 +12,9 @@ import (
 
 	apilayer "github.com/Exonical/licenseiq/backend/internal/api"
 	"github.com/Exonical/licenseiq/backend/internal/app"
+	"github.com/Exonical/licenseiq/backend/internal/auth"
 	"github.com/Exonical/licenseiq/backend/internal/config"
+	"github.com/Exonical/licenseiq/backend/internal/featureflags"
 	"github.com/Exonical/licenseiq/backend/internal/logging"
 	"github.com/Exonical/licenseiq/backend/internal/platform/cache"
 	"github.com/Exonical/licenseiq/backend/internal/platform/database"
@@ -120,14 +122,36 @@ func runServer(cfg config.Config, logger *zap.Logger) error {
 	})
 
 	humaAPI := humagin.New(engine, apilayer.NewHumaConfig("LicenseIQ API", version.Current().Version))
-	services := apilayer.Services{
-		Vendors:     app.NewVendorService(persistence.NewVendorRepository(db), persistence.NewAuditRepository(db)),
-		Products:    app.NewProductService(persistence.NewProductRepository(db), persistence.NewAuditRepository(db)),
-		Licenses:    app.NewLicenseService(persistence.NewLicenseRepository(db), persistence.NewAuditRepository(db)),
-		Assignments: app.NewAssignmentService(persistence.NewAssignmentRepository(db), persistence.NewAuditRepository(db)),
-		Attachments: app.NewAttachmentService(persistence.NewAttachmentRepository(db), persistence.NewAuditRepository(db)),
+	auditRepo := persistence.NewAuditRepository(db)
+	userRepo := persistence.NewUserRepository(db)
+	apiKeyRepo := persistence.NewAPIKeyRepository(db)
+	identitySvc := app.NewIdentityService(userRepo, apiKeyRepo, auditRepo)
+	authManager, err := auth.NewManager(context.Background(), cfg.Auth, identitySvc, userRepo, apiKeyRepo, logger)
+	if err != nil {
+		return err
 	}
-	apilayer.RegisterRoutes(humaAPI, services, logger)
+	if plain, err := authManager.Bootstrap(context.Background(), cfg.Auth.Bootstrap); err != nil {
+		return err
+	} else if plain != "" {
+		logger.Warn("bootstrap administrator api key", zap.String("plaintext", plain))
+	}
+	featureFlagRepo := persistence.NewFeatureFlagRepository(db)
+	featureFlagManager, err := featureflags.NewManager(context.Background(), cfg.FeatureFlags, featureFlagRepo, logger)
+	if err != nil {
+		return err
+	}
+	defer featureFlagManager.Close()
+	services := apilayer.Services{
+		Vendors:      app.NewVendorService(persistence.NewVendorRepository(db), auditRepo),
+		Products:     app.NewProductService(persistence.NewProductRepository(db), auditRepo),
+		Licenses:     app.NewLicenseService(persistence.NewLicenseRepository(db), auditRepo),
+		Assignments:  app.NewAssignmentService(persistence.NewAssignmentRepository(db), auditRepo),
+		Attachments:  app.NewAttachmentService(persistence.NewAttachmentRepository(db), auditRepo),
+		FeatureFlags: app.NewFeatureFlagService(featureFlagRepo),
+		Identity:     identitySvc,
+	}
+	apilayer.RegisterRoutes(humaAPI, services, logger, authManager, featureFlagManager)
+	apilayer.MountOpenAPI(engine, humaAPI)
 	apilayer.MountDocs(engine)
 
 	httpServer := &http.Server{

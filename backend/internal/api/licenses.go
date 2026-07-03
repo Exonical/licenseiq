@@ -28,6 +28,7 @@ func registerLicenseRoutes(api huma.API, svc app.LicenseService, logger *zap.Log
 		o.DefaultStatus = http.StatusCreated
 		o.Tags = []string{"Licenses"}
 		o.Errors = operationErrors()
+		protectedOperation("licenses", "write")(o)
 	})
 
 	huma.Get(api, "/licenses", func(ctx context.Context, input *struct{ ListInput }) (*LicenseListOutput, error) {
@@ -47,6 +48,7 @@ func registerLicenseRoutes(api huma.API, svc app.LicenseService, logger *zap.Log
 		o.Description = "List licenses with pagination."
 		o.Tags = []string{"Licenses"}
 		o.Errors = operationErrors()
+		protectedOperation("licenses", "read")(o)
 	})
 
 	huma.Get(api, "/licenses/{id}", func(ctx context.Context, input *struct {
@@ -63,6 +65,7 @@ func registerLicenseRoutes(api huma.API, svc app.LicenseService, logger *zap.Log
 		o.Description = "Get a single license by id."
 		o.Tags = []string{"Licenses"}
 		o.Errors = operationErrors()
+		protectedOperation("licenses", "read")(o)
 	})
 
 	huma.Put(api, "/licenses/{id}", func(ctx context.Context, input *struct {
@@ -84,6 +87,7 @@ func registerLicenseRoutes(api huma.API, svc app.LicenseService, logger *zap.Log
 		o.Description = "Update a license record."
 		o.Tags = []string{"Licenses"}
 		o.Errors = operationErrors()
+		protectedOperation("licenses", "write")(o)
 	})
 
 	huma.Delete(api, "/licenses/{id}", func(ctx context.Context, input *struct {
@@ -100,5 +104,6 @@ func registerLicenseRoutes(api huma.API, svc app.LicenseService, logger *zap.Log
 		o.Tags = []string{"Licenses"}
 		o.DefaultStatus = http.StatusNoContent
 		o.Errors = operationErrors()
+		protectedOperation("licenses", "write")(o)
 	})
 }
