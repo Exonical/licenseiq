@@ -40,6 +40,43 @@ jobs:
       - name: Test
         run: go test ./... -race -coverprofile=coverage.out
 
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: licenseiq
+          POSTGRES_PASSWORD: licenseiq
+          POSTGRES_DB: licenseiq
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U licenseiq -d licenseiq"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+          cache: true
+          cache-dependency-path: backend/go.sum
+
+      - name: Download modules
+        working-directory: backend
+        run: go mod download
+
+      - name: Test integration
+        working-directory: backend
+        env:
+          LICENSEIQ_TEST_POSTGRES_DSN: postgres://licenseiq:licenseiq@localhost:5432/licenseiq?sslmode=disable
+        run: go test -tags=integration ./...
+
   docker-build:
     runs-on: ubuntu-latest
     steps:

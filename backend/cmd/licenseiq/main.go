@@ -14,6 +14,7 @@ import (
 	"github.com/Exonical/licenseiq/backend/internal/logging"
 	"github.com/Exonical/licenseiq/backend/internal/platform/cache"
 	"github.com/Exonical/licenseiq/backend/internal/platform/database"
+	"github.com/Exonical/licenseiq/backend/internal/platform/database/persistence"
 	"github.com/Exonical/licenseiq/backend/internal/server"
 	"github.com/Exonical/licenseiq/backend/internal/telemetry"
 	"github.com/Exonical/licenseiq/backend/internal/version"
@@ -33,6 +34,35 @@ func main() {
 	}
 	defer func() { _ = logger.Sync() }()
 
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		if err := runMigrations(cfg, logger); err != nil {
+			logger.Fatal("run migrations", zap.Error(err))
+		}
+		return
+	}
+
+	if err := runServer(cfg, logger); err != nil {
+		logger.Fatal("run server", zap.Error(err))
+	}
+}
+
+func runMigrations(cfg config.Config, logger *zap.Logger) error {
+	db, err := openDatabaseWithRetry(cfg.Postgres, 5, 2*time.Second)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := database.Close(db); err != nil {
+			logger.Warn("close database", zap.Error(err))
+		}
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.HTTP.ShutdownTimeout)
+	defer cancel()
+	return persistence.Migrate(ctx, db)
+}
+
+func runServer(cfg config.Config, logger *zap.Logger) error {
 	shutdownTelemetry, err := telemetry.New(context.Background(), telemetry.Config{
 		Endpoint:    cfg.OTel.Endpoint,
 		ServiceName: cfg.OTel.ServiceName,
@@ -52,7 +82,7 @@ func main() {
 
 	db, err := openDatabaseWithRetry(cfg.Postgres, 5, 2*time.Second)
 	if err != nil {
-		logger.Fatal("connect database", zap.Error(err))
+		return err
 	}
 	defer func() {
 		if err := database.Close(db); err != nil {
@@ -72,15 +102,16 @@ func main() {
 		}()
 	}
 
+	checkers := []server.HealthChecker{database.Checker{DB: db}}
+	if valkeyClient != nil {
+		checkers = append(checkers, cache.Checker{Cache: valkeyClient})
+	}
 	engine := server.NewEngine(server.Options{
 		Logger:      logger,
 		ServiceName: cfg.OTel.ServiceName,
 		StartedAt:   time.Now().UTC(),
 		Version:     version.Current(),
-		Checkers: []server.HealthChecker{
-			database.Checker{DB: db},
-			cache.Checker{Cache: valkeyClient},
-		},
+		Checkers:    checkers,
 	})
 
 	httpServer := &http.Server{
@@ -106,20 +137,21 @@ func main() {
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Fatal("server exited", zap.Error(err))
 		}
-		return
+		return nil
 	}
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.HTTP.ShutdownTimeout)
 	defer cancel()
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
-		logger.Fatal("shutdown server", zap.Error(err))
+		return err
 	}
 
 	if err := <-serverErr; err != nil && !errors.Is(err, http.ErrServerClosed) {
-		logger.Fatal("server exited", zap.Error(err))
+		return err
 	}
 	logger.Info("server stopped")
+	return nil
 }
 
 func openDatabaseWithRetry(cfg config.PostgresConfig, attempts int, delay time.Duration) (*gorm.DB, error) {
