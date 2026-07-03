@@ -36,6 +36,9 @@ func (j *MaintenanceJob) Run(ctx context.Context) error {
 	if j == nil {
 		return nil
 	}
+	if j.logger == nil {
+		j.logger = zap.NewNop()
+	}
 	if j.flags != nil && !j.flags.Evaluate(ctx, maintenanceFlagKey, true) {
 		return nil
 	}

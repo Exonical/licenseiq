@@ -11,7 +11,6 @@ import (
 	"github.com/Exonical/licenseiq/backend/internal/domain"
 	"github.com/Exonical/licenseiq/backend/internal/notify"
 	"github.com/Exonical/licenseiq/backend/internal/platform/database/persistence"
-	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -42,6 +41,7 @@ func TestWorkerIntegrationRenewalLogAndApiKeyMaintenance(t *testing.T) {
 	productRepo := persistence.NewProductRepository(db)
 	licenseRepo := persistence.NewLicenseRepository(db)
 	reminderRepo := persistence.NewRenewalReminderLogRepository(db)
+	userRepo := persistence.NewUserRepository(db)
 	apiKeyRepo := persistence.NewAPIKeyRepository(db)
 
 	vendor := &domain.Vendor{Name: "Vendor"}
@@ -53,7 +53,7 @@ func TestWorkerIntegrationRenewalLogAndApiKeyMaintenance(t *testing.T) {
 		t.Fatalf("product: %v", err)
 	}
 	renewal := time.Now().UTC().AddDate(0, 0, 30)
-	license := &domain.License{VendorID: vendor.ID, ProductID: product.ID, RenewalDate: &renewal, LicenseKey: "LIC-INT", Cost: decimal.RequireFromString("10.00"), Currency: "USD"}
+	license := &domain.License{VendorID: vendor.ID, ProductID: product.ID, RenewalDate: &renewal, LicenseKey: "LIC-INT", Cost: decimal.RequireFromString("10.00"), Currency: "USD", Type: domain.LicenseTypeSubscription}
 	if err := licenseRepo.Create(context.Background(), license); err != nil {
 		t.Fatalf("license: %v", err)
 	}
@@ -73,7 +73,11 @@ func TestWorkerIntegrationRenewalLogAndApiKeyMaintenance(t *testing.T) {
 	}
 
 	expired := time.Now().UTC().Add(-time.Hour)
-	key := &domain.APIKey{OwnerUserID: uuid.New(), Name: "expired", HashedKey: "x", Active: true, ExpiresAt: &expired}
+	owner := &domain.User{Email: "owner@example.com", DisplayName: "Owner", Role: domain.RoleAdministrator, IsServiceAccount: true, Active: true}
+	if err := userRepo.Create(context.Background(), owner); err != nil {
+		t.Fatalf("owner create: %v", err)
+	}
+	key := &domain.APIKey{OwnerUserID: owner.ID, KeyID: "expired", Name: "expired", HashedKey: "x", Active: true, ExpiresAt: &expired}
 	if err := apiKeyRepo.Create(context.Background(), key); err != nil {
 		t.Fatalf("api key create: %v", err)
 	}
