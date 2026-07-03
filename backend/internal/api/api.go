@@ -23,6 +23,7 @@ type Services struct {
 	FeatureFlags  app.FeatureFlagService
 	Identity      app.IdentityService
 	Notifications *notify.Dispatcher
+	Reports       app.ReportingService
 }
 
 func NewHumaConfig(title, version string) huma.Config {
@@ -68,6 +69,7 @@ func RegisterRoutes(api huma.API, services Services, logger *zap.Logger, authMan
 	registerAttachmentRoutes(group, services.Attachments, logger)
 	registerFeatureFlagRoutes(group, services.FeatureFlags, flagManager, logger)
 	registerNotificationRoutes(group, services.Notifications, logger)
+	registerReportingRoutes(group, services.Reports, logger)
 	registerIdentityRoutes(group, services.Identity, logger)
 }
 

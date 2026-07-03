@@ -11,6 +11,10 @@ import (
 )
 
 func registerAssignmentRoutes(api huma.API, svc app.AssignmentService, logger *zap.Logger) {
+	if svc == nil {
+		return
+	}
+
 	huma.Post(api, "/assignments", func(ctx context.Context, input *AssignmentCreateInput) (*AssignmentGetOutput, error) {
 		created, err := svc.Create(ctx, assignmentBodyToDomain(input.Body))
 		if err != nil {

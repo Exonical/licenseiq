@@ -11,6 +11,10 @@ import (
 )
 
 func registerProductRoutes(api huma.API, svc app.ProductService, logger *zap.Logger) {
+	if svc == nil {
+		return
+	}
+
 	huma.Post(api, "/products", func(ctx context.Context, input *ProductCreateInput) (*ProductGetOutput, error) {
 		created, err := svc.Create(ctx, productBodyToDomain(input.Body))
 		if err != nil {

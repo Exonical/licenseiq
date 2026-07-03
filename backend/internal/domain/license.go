@@ -13,6 +13,7 @@ type License struct {
 	Base
 	ProductID             uuid.UUID
 	VendorID              uuid.UUID
+	Department            string
 	LicenseKey            string
 	SubscriptionID        string
 	ContractNumber        string
@@ -35,6 +36,7 @@ func (l *License) Validate() error {
 		return fmt.Errorf("%w: license is nil", ErrValidation)
 	}
 	l.LicenseKey = strings.TrimSpace(l.LicenseKey)
+	l.Department = strings.TrimSpace(l.Department)
 	l.SubscriptionID = strings.TrimSpace(l.SubscriptionID)
 	l.ContractNumber = strings.TrimSpace(l.ContractNumber)
 	l.PurchaseOrder = strings.TrimSpace(l.PurchaseOrder)

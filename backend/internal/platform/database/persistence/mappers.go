@@ -92,6 +92,7 @@ func licenseToModel(l domain.License) LicenseModel {
 		BaseModel:             newBaseModel(l.Base),
 		ProductID:             l.ProductID,
 		VendorID:              l.VendorID,
+		Department:            l.Department,
 		LicenseKey:            l.LicenseKey,
 		SubscriptionID:        l.SubscriptionID,
 		ContractNumber:        l.ContractNumber,

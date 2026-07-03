@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Exonical/licenseiq/backend/internal/app"
 	"github.com/Exonical/licenseiq/backend/internal/domain"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -176,5 +177,41 @@ func TestProductLicenseAssignmentAndFeatureFlagRepositories(t *testing.T) {
 	}
 	if _, err := flagRepo.Get(context.Background(), flag.ID); err != domain.ErrNotFound {
 		t.Fatalf("expected flag not found, got %v", err)
+	}
+}
+
+func TestReportingServiceIntegration(t *testing.T) {
+	db := testDB(t)
+	vendorRepo := NewVendorRepository(db)
+	productRepo := NewProductRepository(db)
+	licenseRepo := NewLicenseRepository(db)
+
+	vendor := &domain.Vendor{Name: "Acme"}
+	if err := vendorRepo.Create(context.Background(), vendor); err != nil {
+		t.Fatalf("vendor create: %v", err)
+	}
+	product := &domain.Product{Name: "Widget", VendorID: vendor.ID}
+	if err := productRepo.Create(context.Background(), product); err != nil {
+		t.Fatalf("product create: %v", err)
+	}
+	renewal := time.Now().UTC().AddDate(0, 0, 30)
+	license := &domain.License{ProductID: product.ID, VendorID: vendor.ID, Department: "Finance", LicenseKey: "ACME-1", RenewalDate: &renewal, SeatCount: 10, AssignedSeats: 4, Cost: decimal.RequireFromString("12.50"), Currency: "USD", Type: domain.LicenseTypeSubscription}
+	if err := licenseRepo.Create(context.Background(), license); err != nil {
+		t.Fatalf("license create: %v", err)
+	}
+	service := app.NewReportingService(vendorRepo, productRepo, licenseRepo)
+	renewals, err := service.UpcomingRenewals(context.Background(), app.UpcomingRenewalsParams{AsOf: time.Now().UTC(), WindowDays: 90})
+	if err != nil {
+		t.Fatalf("renewals: %v", err)
+	}
+	if len(renewals.Rows) != 1 || renewals.Rows[0][0] != "ACME-1" {
+		t.Fatalf("unexpected renewals: %#v", renewals.Rows)
+	}
+	utilization, err := service.LicenseUtilization(context.Background(), app.ReportingAsOfParams{AsOf: time.Now().UTC()})
+	if err != nil {
+		t.Fatalf("utilization: %v", err)
+	}
+	if len(utilization.Rows) != 1 || utilization.Rows[0][0] != "ACME-1" {
+		t.Fatalf("unexpected utilization: %#v", utilization.Rows)
 	}
 }

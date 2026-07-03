@@ -11,6 +11,10 @@ import (
 )
 
 func registerLicenseRoutes(api huma.API, svc app.LicenseService, logger *zap.Logger) {
+	if svc == nil {
+		return
+	}
+
 	huma.Post(api, "/licenses", func(ctx context.Context, input *LicenseCreateInput) (*LicenseGetOutput, error) {
 		body, err := licenseBodyToDomain(input.Body)
 		if err != nil {
