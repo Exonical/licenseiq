@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache: true
+          cache-dependency-path: backend/go.sum
+
+      - name: Download modules
+        run: go mod download
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.64.8
+          working-directory: backend
+          args: --timeout=5m
+
+      - name: Test
+        run: go test ./... -race -coverprofile=coverage.out
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: |
+          docker build \
+            --build-arg VERSION=${GITHUB_SHA} \
+            --build-arg COMMIT=${GITHUB_SHA} \
+            --build-arg DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            -t licenseiq-api:ci \
+            -f backend/Dockerfile \
+            backend
