@@ -1,4 +1,4 @@
-FROM golang:1.26-bookworm AS builder
+FROM golang:1.26-alpine3.24 AS builder
 
 WORKDIR /src
 
@@ -17,7 +17,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     -X github.com/Exonical/licenseiq/backend/internal/version.Date=${DATE}" \
     -o /out/licenseiq ./cmd/licenseiq
 
-FROM alpine:3.21
+FROM alpine:3.24
 
 RUN addgroup -S licenseiq && adduser -S -G licenseiq -u 65532 licenseiq \
     && apk add --no-cache ca-certificates wget
