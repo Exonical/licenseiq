@@ -117,7 +117,7 @@ func registerFeatureFlagRoutes(api huma.API, svc app.FeatureFlagService, manager
 			protectedOperation("feature_flags", "read")(o)
 		})
 
-		huma.Get(api, "/feature-flags/{key}/evaluate", func(ctx context.Context, input *struct {
+		huma.Get(api, "/feature-flags/evaluate/{key}", func(ctx context.Context, input *struct {
 			Key string `path:"key" example:"new-dashboard"`
 		}) (*FeatureFlagEvaluateOutput, error) {
 			return &FeatureFlagEvaluateOutput{Body: FeatureFlagEvaluationResponse{Enabled: manager.Evaluate(ctx, input.Key, false)}}, nil

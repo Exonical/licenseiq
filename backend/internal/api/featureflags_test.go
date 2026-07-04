@@ -206,7 +206,7 @@ func TestFeatureFlagAPIEvaluateAndAuthorization(t *testing.T) {
 	_, api := humatest.New(t, NewHumaConfig("LicenseIQ API", "test"))
 	RegisterRoutes(api, Services{FeatureFlags: service}, zap.NewNop(), authMgr, mgr)
 
-	resp := api.Get("/api/v1/feature-flags/new-dashboard/evaluate", "Authorization: Bearer "+viewerToken)
+	resp := api.Get("/api/v1/feature-flags/evaluate/new-dashboard", "Authorization: Bearer "+viewerToken)
 	if resp.Code != 200 {
 		t.Fatalf("expected 200, got %d", resp.Code)
 	}

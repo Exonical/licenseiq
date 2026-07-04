@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/v1/api-keys/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete API key
+         * @description Revoke an API key.
+         */
+        delete: operations["deleteAPIKey"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/assignments": {
         parameters: {
             query?: never;
@@ -122,6 +142,46 @@ export interface paths {
          * @description Create a feature flag with targeting, percentage rollout, and schedule settings.
          */
         post: operations["createFeatureFlag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/feature-flags/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Evaluate feature flags
+         * @description Evaluate all feature flags for the current authenticated principal.
+         */
+        get: operations["evaluateAllFeatureFlags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/feature-flags/evaluate/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Evaluate feature flag
+         * @description Evaluate a single feature flag for the current authenticated principal.
+         */
+        get: operations["evaluateFeatureFlag"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -444,6 +504,82 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/service-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List service accounts
+         * @description List service account users with pagination.
+         */
+        get: operations["listServiceAccounts"];
+        put?: never;
+        /**
+         * Create service account
+         * @description Create a service account user.
+         */
+        post: operations["createServiceAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/service-accounts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get service account
+         * @description Get a service account by id.
+         */
+        get: operations["getServiceAccount"];
+        /**
+         * Update service account
+         * @description Update a service account.
+         */
+        put: operations["updateServiceAccount"];
+        post?: never;
+        /**
+         * Delete service account
+         * @description Soft-delete a service account.
+         */
+        delete: operations["deleteServiceAccount"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/service-accounts/{id}/api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List API keys
+         * @description List API keys for a service account.
+         */
+        get: operations["listServiceAccountAPIKeys"];
+        put?: never;
+        /**
+         * Create API key
+         * @description Create an API key for a service account.
+         */
+        post: operations["createServiceAccountAPIKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/vendors": {
         parameters: {
             query?: never;
@@ -500,6 +636,115 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        APIKeyBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/v1/schemas/APIKeyBody.json
+             */
+            readonly $schema?: string;
+            /**
+             * Format: date-time
+             * @example 2027-01-01T00:00:00Z
+             */
+            expiresAt?: string;
+            /** @example cli */
+            name: string;
+            /**
+             * @example [
+             *       "read"
+             *     ]
+             */
+            scopes?: string[] | null;
+        };
+        APIKeyCreateResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/v1/schemas/APIKeyCreateResponse.json
+             */
+            readonly $schema?: string;
+            /** @example true */
+            active: boolean;
+            /**
+             * Format: date-time
+             * @example 2026-01-01T00:00:00Z
+             */
+            createdAt: string;
+            /** Format: date-time */
+            deletedAt?: string;
+            /**
+             * Format: date-time
+             * @example 2027-01-01T00:00:00Z
+             */
+            expiresAt?: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440000 */
+            id: string;
+            /** @example abc123def456 */
+            keyId: string;
+            /**
+             * Format: date-time
+             * @example 2026-01-01T00:00:00Z
+             */
+            lastUsedAt?: string;
+            /** @example cli */
+            name: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440000 */
+            ownerUserId: string;
+            /** @example liq_abc123def456.abcdef */
+            plaintext: string;
+            /**
+             * @example [
+             *       "read"
+             *     ]
+             */
+            scopes?: string[] | null;
+            /**
+             * Format: date-time
+             * @example 2026-01-01T00:00:00Z
+             */
+            updatedAt: string;
+        };
+        APIKeyResponse: {
+            /** @example true */
+            active: boolean;
+            /**
+             * Format: date-time
+             * @example 2026-01-01T00:00:00Z
+             */
+            createdAt: string;
+            /** Format: date-time */
+            deletedAt?: string;
+            /**
+             * Format: date-time
+             * @example 2027-01-01T00:00:00Z
+             */
+            expiresAt?: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440000 */
+            id: string;
+            /** @example abc123def456 */
+            keyId: string;
+            /**
+             * Format: date-time
+             * @example 2026-01-01T00:00:00Z
+             */
+            lastUsedAt?: string;
+            /** @example cli */
+            name: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440000 */
+            ownerUserId: string;
+            /**
+             * @example [
+             *       "read"
+             *     ]
+             */
+            scopes?: string[] | null;
+            /**
+             * Format: date-time
+             * @example 2026-01-01T00:00:00Z
+             */
+            updatedAt: string;
+        };
         AssignmentBody: {
             /**
              * Format: uri
@@ -734,6 +979,27 @@ export interface components {
              *     ]
              */
             targetUserIds?: string[] | null;
+        };
+        FeatureFlagEvaluationAllResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/v1/schemas/FeatureFlagEvaluationAllResponse.json
+             */
+            readonly $schema?: string;
+            flags: {
+                [key: string]: boolean;
+            };
+        };
+        FeatureFlagEvaluationResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/v1/schemas/FeatureFlagEvaluationResponse.json
+             */
+            readonly $schema?: string;
+            /** @example true */
+            enabled: boolean;
         };
         FeatureFlagResponse: {
             /**
@@ -1001,6 +1267,30 @@ export interface components {
             readonly $schema?: string;
             results: components["schemas"]["NotificationDispatchResult"][] | null;
         };
+        PageAPIKeyResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/v1/schemas/PageAPIKeyResponse.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["APIKeyResponse"][] | null;
+            /**
+             * Format: int64
+             * @example 100
+             */
+            limit: number;
+            /**
+             * Format: int64
+             * @example 0
+             */
+            offset: number;
+            /**
+             * Format: int64
+             * @example 1
+             */
+            total: number;
+        };
         PageAssignmentResponse: {
             /**
              * Format: uri
@@ -1145,6 +1435,30 @@ export interface components {
              */
             total: number;
         };
+        PageUserResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/v1/schemas/PageUserResponse.json
+             */
+            readonly $schema?: string;
+            data: components["schemas"]["UserResponse"][] | null;
+            /**
+             * Format: int64
+             * @example 100
+             */
+            limit: number;
+            /**
+             * Format: int64
+             * @example 0
+             */
+            offset: number;
+            /**
+             * Format: int64
+             * @example 1
+             */
+            total: number;
+        };
         PageVendorResponse: {
             /**
              * Format: uri
@@ -1237,6 +1551,64 @@ export interface components {
             /** @example https://example.com */
             website?: string;
         };
+        ServiceAccountBody: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/v1/schemas/ServiceAccountBody.json
+             */
+            readonly $schema?: string;
+            /** @example true */
+            active: boolean;
+            /** @example Bootstrap Admin */
+            displayName?: string;
+            /** @example admin@example.com */
+            email: string;
+            /** @example true */
+            isServiceAccount: boolean;
+            /**
+             * @example Administrator
+             * @enum {string}
+             */
+            role: "Administrator" | "LicenseManager" | "Auditor" | "Finance" | "Viewer";
+        };
+        UserResponse: {
+            /**
+             * Format: uri
+             * @description A URL to the JSON Schema for this object.
+             * @example /api/v1/schemas/UserResponse.json
+             */
+            readonly $schema?: string;
+            /** @example true */
+            active: boolean;
+            /**
+             * Format: date-time
+             * @example 2026-01-01T00:00:00Z
+             */
+            createdAt: string;
+            /** Format: date-time */
+            deletedAt?: string;
+            /** @example Bootstrap Admin */
+            displayName?: string;
+            /** @example admin@example.com */
+            email: string;
+            /** @example oidc-subject-123 */
+            externalSubject?: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440000 */
+            id: string;
+            /** @example true */
+            isServiceAccount: boolean;
+            /**
+             * @example Administrator
+             * @enum {string}
+             */
+            role: "Administrator" | "LicenseManager" | "Auditor" | "Finance" | "Viewer";
+            /**
+             * Format: date-time
+             * @example 2026-01-01T00:00:00Z
+             */
+            updatedAt: string;
+        };
         VendorBody: {
             /**
              * Format: uri
@@ -1304,6 +1676,71 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    deleteAPIKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
     listAssignments: {
         parameters: {
             query?: {
@@ -2004,6 +2441,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FeatureFlagResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    evaluateAllFeatureFlags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureFlagEvaluationAllResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    evaluateFeatureFlag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureFlagEvaluationResponse"];
                 };
             };
             /** @description Bad Request */
@@ -3582,6 +4151,489 @@ export interface operations {
                 };
                 content: {
                     "application/json": string;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    listServiceAccounts: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                includeDeleted?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageUserResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    createServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceAccountBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    getServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    updateServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceAccountBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    deleteServiceAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    listServiceAccountAPIKeys: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                includeDeleted?: boolean;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageAPIKeyResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorModel"];
+                };
+            };
+        };
+    };
+    createServiceAccountAPIKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["APIKeyBody"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIKeyCreateResponse"];
                 };
             };
             /** @description Bad Request */
